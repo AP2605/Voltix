@@ -263,6 +263,87 @@ mysql -u $MYSQL_USER -p$MYSQL_PWD < database/queries/test_cases.sql
 
 ---
 
+## Frontend
+
+### Architecture & Tech Stack
+- **Framework:** React 18 with Vite 5.x
+- **Routing:** React Router 6 with role-based navigation guards
+- **Icons:** Lucide React
+- **Design System:** Custom CSS design system (Dark/light technical neutral with electric emerald `#10b981` accents, JetBrains Mono for telemetry metrics, and Plus Jakarta Sans for typography)
+
+### Component Architecture
+- **Reusable Core Components:**
+  - `Navbar`: Top navigation with active status indicators, profile badges, and role tagging.
+  - `Sidebar`: Secondary portal navigation for operator and admin workflows.
+  - `StationCard`: Dynamic hub summary card displaying live bay availability, connector chips, ratings, and tariffs.
+  - `ChargerCard`: Hardware point unit selector displaying speed (kW), connector standards, and availability.
+  - `ReservationCard`: Time-slot scheduling card with cancel and start-charge action triggers.
+  - `BatteryStatus`: Live telemetry card rendering vehicle battery State-of-Charge (SoC %), range estimation, and max DC power.
+  - `StatCard`: KPI metric cards with trends and comparative baselines.
+  - `StatusBadge`: Database operational status indicator (`AVAILABLE`, `OCCUPIED`, `RESERVED`, `MAINTENANCE`, `OFFLINE`).
+  - `SearchBar`: Real-time fuzzy query input.
+  - `FilterPanel`: Multi-criteria filter sidebar (City, Connector Standard, Speed Category, Minimum Rating, Availability).
+  - `Modal`: Accessible dialogs for wallet top-ups and vehicle additions.
+  - `Loading` / `EmptyState` / `ErrorState`: Graceful asynchronous UI state handlers.
+
+### Application Pages
+1. **Landing Page (`/`)**: Product showcase, how it works, network statistics, and live grid telemetry preview.
+2. **Login (`/login`)**: Driver sign-in with 1-click demo role selector (`Driver`, `Operator`, `Admin`).
+3. **Register (`/register`)**: Account creation with validation rules.
+4. **Driver Dashboard (`/dashboard`)**: Centralized command center with vehicle SoC, active session alerts, nearby stations, and recent activity.
+5. **Station Locator (`/stations`)**: Multi-attribute filter sidebar with interactive grid map visualization.
+6. **Station Details (`/stations/:id`)**: Technical hardware bay inspection, Time-of-Use pricing tiers, amenities, and customer reviews.
+7. **Reservation (`/reservation/:stationId`)**: Slot scheduling workflow with interval duration, cost estimation, and confirmation screen.
+8. **Live Charging Session (`/charging`)**: Telemetry dashboard streaming real-time voltage, current, and energy metrics with Stop/Emergency controls.
+9. **Payment Settlement (`/payment/:sessionId`)**: Itemized billing breakdown (energy, idle fees, coupon discounts) and wallet settlement.
+10. **Prepaid Wallet (`/wallet`)**: Digital wallet ledger with double-entry transaction history and instant UPI top-ups.
+11. **Audit History (`/history`)**: Multi-entity tabbed view covering charging sessions, reservations, and invoice payments with search and sorting.
+12. **Driver Profile (`/profile`)**: Account credentials and registered EV vehicle garage.
+13. **Operator Dashboard (`/operator`)**: Station operator portal for supervising bay hardware status, station utilization %, and maintenance tickets.
+14. **Admin Dashboard (`/admin`)**: Network-wide executive analytics, revenue by metropolitan city, top-performing hubs, and hardware distribution.
+
+### 1-Click Demo Profiles (For Review 1)
+| Role | Demo Account Name | Email | Password | Target Dashboard |
+|---|---|---|---|---|
+| **Driver (User)** | Rahul Verma | `rahul.verma@gmail.com` | `voltix2026` | `/dashboard` |
+| **Operator** | Rajesh Kumar | `rajesh.operator@voltix.in` | `voltix2026` | `/operator` |
+| **Administrator** | Ayush Sharma | `ayush.admin@voltix.in` | `voltix2026` | `/admin` |
+
+### Service Layer & Future Spring Boot Integration
+All UI components interface strictly via service abstractions (`stationService`, `reservationService`, `chargingService`, `paymentService`, `authService`). Currently, these services consume centralized mock datasets (`src/services/mockData.js`) that mirror the MySQL `voltix_db` schema. 
+
+When the Spring Boot backend is introduced in the next phase, swapping from mock data to live REST APIs requires only updating `src/services/api.js` (`http://localhost:8080/api`).
+
+---
+
+## Running Frontend
+
+### Prerequisites
+- Node.js v18+ (tested on v24.11.0)
+- npm v9+ (tested on v11.6.1)
+
+### Execution Steps
+```bash
+# 1. Navigate to frontend directory
+cd frontend
+
+# 2. Install dependencies
+npm install
+
+# 3. Start local development server
+npm run dev
+```
+
+### Development Server
+The application will launch locally at:
+```
+http://localhost:5173
+```
+
+---
+
 ## Documentation Links
 - [Database Technical Specification (DBMS Review 1)](file:///C:/Urban%20EV%20Charging%20Network%20Mgmt%20System/Voltix/docs/database-design.md)
 - [Relational Schema Normalization (1NF, 2NF, 3NF)](file:///C:/Urban%20EV%20Charging%20Network%20Mgmt%20System/Voltix/docs/normalization.md)
+- [Frontend ↔ Database Mapping Specification](file:///C:/Urban%20EV%20Charging%20Network%20Mgmt%20System/Voltix/docs/frontend-database-mapping.md)
+

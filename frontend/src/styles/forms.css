@@ -1,0 +1,980 @@
+/* ==========================================================================
+   VOLTIX: Forms, Modals, Payment Cards, and Dialog Stylesheet
+   File: forms.css
+   Design System: Modern Technical EV Infrastructure Platform
+   ========================================================================== */
+
+/* ==========================================================================
+   1. PREMIUM CENTERED AUTHENTICATION VIEWPORT & CARD SHELL
+   ========================================================================== */
+.auth-viewport-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  background-color: var(--bg-page);
+  background-image: 
+    radial-gradient(at 10% 10%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+    radial-gradient(at 90% 90%, rgba(14, 165, 233, 0.05) 0px, transparent 50%);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.auth-card-shell,
+.auth-split-shell {
+  width: 100%;
+  max-width: 500px;
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: 20px;
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+  padding: 36px 36px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  opacity: 1;
+  animation: authShellEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes authShellEntrance {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   2. TOP CENTERED BRAND HEADER
+   ========================================================================== */
+.auth-brand-center {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.auth-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.auth-brand-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-zap {
+  color: var(--primary);
+}
+
+.auth-brand-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #0f172a;
+}
+
+.auth-brand-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* ==========================================================================
+   3. INTERACTIVE AUTH FORM PANE
+   ========================================================================== */
+.auth-form-pane {
+  background: transparent;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+.auth-form-inner {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.auth-panel-header {
+  margin-bottom: 22px;
+}
+
+.auth-panel-title {
+  font-size: 23px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.015em;
+  margin-bottom: 4px;
+}
+
+.auth-panel-subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   4. DIRECTIONAL SLIDE ANIMATION STAGES
+   ========================================================================== */
+.auth-transition-stage {
+  position: relative;
+  width: 100%;
+}
+
+.auth-panel-content.animate-slide-in {
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.dir-forward .auth-panel-content.animate-slide-in {
+  animation-name: slideInFromRight;
+}
+
+.dir-backward .auth-panel-content.animate-slide-in {
+  animation-name: slideInFromLeft;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.stagger-item {
+  opacity: 1;
+  transform: none;
+}
+
+/* ==========================================================================
+   5. ROLE SELECTOR (SEGMENTED CARDS + ACTIVE SLIDING INDICATOR)
+   ========================================================================== */
+.auth-role-section {
+  margin-bottom: 20px;
+}
+
+.auth-role-heading {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.auth-role-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  position: relative;
+  background: #f1f5f9;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Mathematically pixel-perfect sliding indicator */
+.role-sliding-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  background: #ffffff;
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.16), 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.role-choice-card {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 9px 9px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  user-select: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.role-choice-card:hover:not(.is-active) {
+  opacity: 0.8;
+}
+
+.role-choice-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.role-choice-card.is-active {
+  transform: translateY(-1px);
+}
+
+.role-card-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.role-card-icon-box {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.role-card-icon-box.active {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  border: 1px solid var(--primary-border);
+}
+
+.role-card-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.role-card-tag.active {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  border: 1px solid var(--primary-border);
+}
+
+.role-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.role-choice-card.is-active .role-card-title {
+  color: #064e3b;
+  font-weight: 800;
+}
+
+.role-card-subtext {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.role-choice-card.is-active .role-card-subtext {
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   6. POLISHED INLINE ERROR BANNER
+   ========================================================================== */
+.auth-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  margin-bottom: 18px;
+  color: #991b1b;
+  font-size: 13px;
+  line-height: 1.45;
+  animation: errorSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-icon-svg {
+  color: #dc2626;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.error-message-body {
+  flex: 1;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   7. FORM FIELD GROUPS & MICRO-INTERACTIONS
+   ========================================================================== */
+.form-field-group {
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.form-dual-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.form-field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+  transition: color 0.2s ease;
+}
+
+.input-affix-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-leading-icon {
+  position: absolute;
+  left: 13px;
+  color: #94a3b8;
+  pointer-events: none;
+  transition: color 0.2s ease;
+  z-index: 2;
+}
+
+.form-field-input {
+  width: 100%;
+  padding: 10.5px 38px 10.5px 38px;
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.form-field-input::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.form-field-input:hover:not(:focus) {
+  border-color: #cbd5e1;
+}
+
+.form-field-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+  background-color: #ffffff;
+}
+
+.form-field-input:focus + .input-leading-icon,
+.input-affix-container:focus-within .input-leading-icon {
+  color: var(--primary);
+}
+
+.form-field-input.is-invalid {
+  border-color: #ef4444;
+  background-color: #fffbfb;
+}
+
+.form-field-input.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.field-inline-error {
+  font-size: 11.5px;
+  color: #dc2626;
+  margin-top: 4px;
+}
+
+.input-trailing-action {
+  position: absolute;
+  right: 8px;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  z-index: 2;
+}
+
+.input-trailing-action:hover {
+  color: var(--text-main);
+}
+
+/* ==========================================================================
+   8. REMEMBER ME CHECKBOX & PUBLIC NOTICE
+   ========================================================================== */
+.auth-remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.auth-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.auth-custom-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkbox-custom-ui {
+  width: 17px;
+  height: 17px;
+  border: 1px solid var(--border-card);
+  border-radius: 4px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.auth-custom-checkbox:checked + .checkbox-custom-ui {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.auth-custom-checkbox:focus-visible + .checkbox-custom-ui {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.check-svg {
+  stroke-width: 3;
+}
+
+.account-type-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  margin-bottom: 18px;
+}
+
+.notice-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #e2e8f0;
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.notice-text {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   9. PRIMARY SUBMIT BUTTON
+   ========================================================================== */
+.auth-primary-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 12.5px 20px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.auth-primary-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
+
+.auth-primary-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+
+.auth-primary-btn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-label-state,
+.btn-loading-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-arrow-icon {
+  transition: transform 0.2s ease;
+}
+
+.auth-primary-btn:hover:not(:disabled) .btn-arrow-icon {
+  transform: translateX(3px);
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   10. AUTH SWITCH LINK
+   ========================================================================== */
+.auth-switch-box {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 13.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.auth-switch-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease;
+  font-size: 13.5px;
+}
+
+.auth-switch-btn:hover {
+  color: var(--primary-hover);
+}
+
+.switch-arrow-icon {
+  transition: transform 0.2s ease;
+}
+
+.auth-switch-btn:hover .switch-arrow-icon {
+  transform: translateX(3px);
+}
+
+/* ==========================================================================
+   11. BACKWARD COMPATIBILITY / LEGACY SUPPORT
+   ========================================================================== */
+.auth-page-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-page);
+}
+
+.auth-card {
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 11px 14px;
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.form-error {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   12. MODALS, PAYMENT CARDS, AND SPINNERS (PRESERVED APPLICATION LOGIC)
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal-dialog {
+  background: #ffffff;
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: modalIn 0.2s ease-out;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.payment-option-card {
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.payment-option-card:hover {
+  border-color: #94a3b8;
+}
+
+.payment-option-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 16px;
+  color: var(--text-muted);
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border-card);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   13. RESPONSIVE BREAKPOINTS (320px - 1920px+)
+   ========================================================================== */
+@media (max-width: 540px) {
+  .auth-viewport-wrapper {
+    padding: 16px 12px;
+  }
+
+  .auth-card-shell,
+  .auth-split-shell {
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .auth-brand-center {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+  }
+
+  .auth-brand-pill {
+    display: none;
+  }
+
+  .auth-panel-title {
+    font-size: 20px;
+  }
+
+  .auth-panel-subtitle {
+    font-size: 12.5px;
+  }
+
+  .form-dual-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .auth-role-selector {
+    padding: 3px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .role-sliding-indicator {
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 3);
+  }
+
+  .role-choice-card {
+    padding: 8px 3px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .role-card-topbar {
+    justify-content: center;
+    margin-bottom: 2px;
+  }
+
+  .role-card-tag {
+    display: none;
+  }
+
+  .role-card-title {
+    font-size: 12px;
+    margin-bottom: 1px;
+  }
+
+  .role-card-subtext {
+    font-size: 9px;
+    line-height: 1.2;
+    text-align: center;
+    word-break: break-word;
+  }
+
+  .account-type-notice {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 6px 10px;
+  }
+
+  .auth-switch-box {
+    flex-direction: column;
+    gap: 3px;
+    font-size: 12.5px;
+    margin-top: 18px;
+  }
+
+  .auth-switch-btn {
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 360px) {
+  .auth-viewport-wrapper {
+    padding: 10px 6px;
+  }
+
+  .auth-card-shell,
+  .auth-split-shell {
+    padding: 20px 12px;
+  }
+
+  .role-choice-card {
+    padding: 6px 2px;
+  }
+
+  .role-card-title {
+    font-size: 11.5px;
+  }
+
+  .role-card-subtext {
+    font-size: 8.5px;
+  }
+}
+
+/* ==========================================================================
+   14. ACCESSIBILITY: PREFERS-REDUCED-MOTION
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
