@@ -27,10 +27,6 @@ proc_label: BEGIN
     DECLARE v_charger_status VARCHAR(20);
     DECLARE v_existing_session_id INT DEFAULT NULL;
 
-    SET p_session_id = NULL;
-    SET p_status_code = 'INIT';
-    SET p_message = '';
-
     -- Error handler for unexpected SQL exceptions
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -38,6 +34,10 @@ proc_label: BEGIN
         SET p_status_code = 'SQL_EXCEPTION';
         SET p_message = 'Internal database exception encountered while initiating charging session.';
     END;
+
+    SET p_session_id = NULL;
+    SET p_status_code = 'INIT';
+    SET p_message = '';
 
     -- 1. Begin Transaction
     START TRANSACTION;

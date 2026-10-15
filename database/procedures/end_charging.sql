@@ -34,10 +34,6 @@ proc_label: BEGIN
     DECLARE v_power DECIMAL(6, 2) DEFAULT 30.00;
     DECLARE v_battery_cap DECIMAL(6, 2) DEFAULT 50.00;
 
-    SET p_final_cost = 0.00;
-    SET p_status_code = 'INIT';
-    SET p_message = '';
-
     -- Error handler for unexpected SQL exceptions
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -45,6 +41,10 @@ proc_label: BEGIN
         SET p_status_code = 'SQL_EXCEPTION';
         SET p_message = 'Internal database exception encountered while ending charging session.';
     END;
+
+    SET p_final_cost = 0.00;
+    SET p_status_code = 'INIT';
+    SET p_message = '';
 
     -- 1. Begin Transaction
     START TRANSACTION;

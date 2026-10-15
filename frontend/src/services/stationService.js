@@ -1,34 +1,70 @@
 // ============================================================================
 // VOLTIX: Urban EV Charging Network Management System
 // File: stationService.js
-// Description: Station service backed by real station inventory and dynamic bay status.
+// Description: Station service integrated with Spring Boot /api/stations.
 // ============================================================================
 
-import { mockFetch } from './api';
+import { apiRequest, mockFetch } from './api';
 import { dataStore, CITIES } from './dataStore';
 
 export const stationService = {
   async getStations(filters = {}) {
-    const list = dataStore.getStations(filters);
-    return mockFetch(list);
+    try {
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+      if (filters.cityId) params.append('cityId', filters.cityId);
+      if (filters.connectorType) params.append('connectorType', filters.connectorType);
+      if (filters.speedCategory) params.append('speedCategory', filters.speedCategory);
+      if (filters.availableOnly) params.append('availableOnly', filters.availableOnly);
+
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      return await apiRequest(`/stations${qs}`);
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const list = dataStore.getStations(filters);
+        return mockFetch(list);
+      }
+      throw err;
+    }
   },
 
   async getStationById(id) {
-    const station = dataStore.getStationById(id);
-    if (!station) {
-      throw new Error(`Station #${id} not found`);
+    try {
+      return await apiRequest(`/stations/${id}`);
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const station = dataStore.getStationById(id);
+        if (!station) {
+          throw new Error(`Station #${id} not found`);
+        }
+        return mockFetch(station);
+      }
+      throw err;
     }
-    return mockFetch(station);
   },
 
   async getNearbyStations(limit = 3) {
-    const all = dataStore.getStations();
-    const sorted = [...all].sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
-    return mockFetch(sorted.slice(0, limit));
+    try {
+      return await apiRequest(`/stations/nearby?limit=${limit}`);
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const all = dataStore.getStations();
+        const sorted = [...all].sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+        return mockFetch(sorted.slice(0, limit));
+      }
+      throw err;
+    }
   },
 
   async getCities() {
-    return mockFetch(CITIES);
+    try {
+      return await apiRequest('/cities');
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        return mockFetch(CITIES);
+      }
+      throw err;
+    }
   },
 };
 

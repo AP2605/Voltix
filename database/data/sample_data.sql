@@ -669,13 +669,13 @@ INSERT INTO review (review_id, user_id, station_id, rating, comment, created_at)
 (14, 10,  9, 5, 'Hyderabad hub is state of the art. Covered canopy protects well from the sun.',         '2026-02-14 11:00:00'),
 (15, 11, 12, 4, 'Great charging setup in Hinjewadi. Smooth contactless payment via wallet.',              '2026-02-15 16:20:00'),
 (16, 12,  4, 5, 'Indiranagar station is always my first choice in Bengaluru. 10/10.',                    '2026-02-16 12:45:00'),
-(17, 13,  7, 4, 'Saved my trip from Chennai to Bengaluru with a quick top-up in Vellore.',               '2026-02-17 17:30:00'),
+(17, 13,  8, 4, 'Saved my trip from Chennai to Bengaluru with a quick top-up in Vellore.',               '2026-02-17 17:30:00'),
 (18, 14, 11, 4, 'Coimbatore RS Puram station is neat and functional. Fast 50kW DC charger.',             '2026-02-18 12:00:00'),
-(19, 15,  9, 5, 'Superb infrastructure in Hitec City. Never encountered any queue or breakdown.',         '2026-02-19 21:00:00'),
+(19, 15, 10, 5, 'Superb infrastructure in Hitec City. Never encountered any queue or breakdown.',         '2026-02-19 21:00:00'),
 (20,  7,  3, 3, 'Industrial area around Guindy gets a bit dusty, but charging speeds are solid.',         '2026-02-20 15:30:00'),
 (21,  8,  3, 4, 'Charged my ZS EV quickly before highway drive. Smooth billing.',                         '2026-02-21 13:10:00'),
 (22, 10,  3, 4, 'Good backup power generators in place in Guindy.',                                       '2026-02-22 18:00:00'),
-(23, 12,  5, 4, 'Quick charging and clear meter display on screen.',                                      '2026-02-23 14:30:00'),
+(23, 12,  6, 4, 'Quick charging and clear meter display on screen.',                                      '2026-02-23 14:30:00'),
 (24, 16, 10, 4, 'Gachibowli GreenHub has good parking space and fast connectivity.',                      '2026-02-24 19:30:00');
 
 -- ============================================================================

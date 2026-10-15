@@ -1,31 +1,64 @@
 // ============================================================================
 // VOLTIX: Urban EV Charging Network Management System
 // File: chargingService.js
-// Description: Charging session service calculating telemetry and metrics from real state.
+// Description: Charging session service integrated with Spring Boot /api/charging-sessions.
 // ============================================================================
 
-import { mockFetch } from './api';
+import { apiRequest, mockFetch } from './api';
 import { dataStore } from './dataStore';
 
 export const chargingService = {
   async getActiveSession(userId) {
-    const session = dataStore.getActiveSession(userId);
-    return mockFetch(session);
+    try {
+      return await apiRequest('/charging-sessions/active');
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const session = dataStore.getActiveSession(userId);
+        return mockFetch(session);
+      }
+      throw err;
+    }
   },
 
   async startSession(payload) {
-    const session = dataStore.startChargingSession(payload);
-    return mockFetch(session);
+    try {
+      return await apiRequest('/charging-sessions/start', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const session = dataStore.startChargingSession(payload);
+        return mockFetch(session);
+      }
+      throw err;
+    }
   },
 
   async endSession(sessionId) {
-    const session = dataStore.endChargingSession(sessionId);
-    return mockFetch(session);
+    try {
+      return await apiRequest(`/charging-sessions/${sessionId}/stop`, {
+        method: 'POST',
+      });
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const session = dataStore.endChargingSession(sessionId);
+        return mockFetch(session);
+      }
+      throw err;
+    }
   },
 
   async getChargingHistory(userId) {
-    const sessions = dataStore.getSessions(userId);
-    return mockFetch(sessions);
+    try {
+      return await apiRequest('/charging-sessions');
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const sessions = dataStore.getSessions(userId);
+        return mockFetch(sessions);
+      }
+      throw err;
+    }
   },
 };
 

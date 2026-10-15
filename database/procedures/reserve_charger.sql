@@ -33,11 +33,6 @@ proc_label: BEGIN
     DECLARE v_charger_status VARCHAR(20) DEFAULT NULL;
     DECLARE v_overlap_count INT DEFAULT 0;
 
-    -- Default output values
-    SET p_reservation_id = NULL;
-    SET p_status_code = 'INIT';
-    SET p_message = '';
-
     -- Error handler for unexpected SQL exceptions
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -45,6 +40,11 @@ proc_label: BEGIN
         SET p_status_code = 'SQL_EXCEPTION';
         SET p_message = 'Internal database exception encountered during reservation.';
     END;
+
+    -- Default output values
+    SET p_reservation_id = NULL;
+    SET p_status_code = 'INIT';
+    SET p_message = '';
 
     -- 1. Validate User
     SELECT COUNT(*) INTO v_user_count

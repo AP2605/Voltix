@@ -33,10 +33,6 @@ proc_label: BEGIN
     DECLARE v_wallet_id INT DEFAULT NULL;
     DECLARE v_wallet_balance DECIMAL(10, 2) DEFAULT 0.00;
 
-    SET p_payment_id = NULL;
-    SET p_status_code = 'INIT';
-    SET p_message = '';
-
     -- Error handler for unexpected SQL exceptions
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -44,6 +40,10 @@ proc_label: BEGIN
         SET p_status_code = 'SQL_EXCEPTION';
         SET p_message = 'Internal database exception encountered while processing payment.';
     END;
+
+    SET p_payment_id = NULL;
+    SET p_status_code = 'INIT';
+    SET p_message = '';
 
     -- 1. Validate Payment Method Parameter
     IF p_payment_method NOT IN ('WALLET', 'UPI', 'CARD') THEN
