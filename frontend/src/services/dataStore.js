@@ -362,6 +362,63 @@ export const dataStore = {
   },
 
   // --------------------------------------------------------------------------
+  // WALLET MANAGEMENT
+  // --------------------------------------------------------------------------
+  initWallet(userId, initialBalance = 0) {
+    if (!userId) return { walletId: 0, userId: 0, balance: 0.0, transactions: [] };
+    const allWallets = readStorage(STORAGE_KEYS.WALLETS, {});
+    if (!allWallets[userId]) {
+      allWallets[userId] = {
+        walletId: userId,
+        userId,
+        balance: Number(initialBalance) || 0.0,
+        transactions: [],
+      };
+      writeStorage(STORAGE_KEYS.WALLETS, allWallets);
+    }
+    return allWallets[userId];
+  },
+
+  getWallet(userId) {
+    if (!userId) return { walletId: 0, userId: 0, balance: 0.0, transactions: [] };
+    const allWallets = readStorage(STORAGE_KEYS.WALLETS, {});
+    if (!allWallets[userId]) {
+      return this.initWallet(userId, 0);
+    }
+    return allWallets[userId];
+  },
+
+  addWalletFunds(userId, amount, method = 'UPI') {
+    const wallet = this.getWallet(userId);
+    const numAmount = Number(amount) || 0;
+    const newBalance = (Number(wallet.balance) || 0) + numAmount;
+    wallet.balance = newBalance;
+
+    const tx = {
+      transactionId: Date.now(),
+      walletId: wallet.walletId,
+      amount: numAmount,
+      type: 'CREDIT',
+      transactionType: 'CREDIT',
+      date: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      description: `Prepaid Top-Up via ${method}`,
+      balanceAfter: newBalance,
+    };
+
+    if (!Array.isArray(wallet.transactions)) {
+      wallet.transactions = [];
+    }
+    wallet.transactions.unshift(tx);
+
+    const allWallets = readStorage(STORAGE_KEYS.WALLETS, {});
+    allWallets[userId] = wallet;
+    writeStorage(STORAGE_KEYS.WALLETS, allWallets);
+
+    return wallet;
+  },
+
+  // --------------------------------------------------------------------------
   // VEHICLE MANAGEMENT
   // --------------------------------------------------------------------------
   getVehicles(userId) {

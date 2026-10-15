@@ -46,4 +46,7 @@ public class WalletTransactionResponse {
 
     public BigDecimal getBalanceAfter() { return balanceAfter; }
     public void setBalanceAfter(BigDecimal balanceAfter) { this.balanceAfter = balanceAfter; }
+
+    public String getType() { return transactionType; }
+    public String getDate() { return timestamp != null ? timestamp.toString() : null; }
 }

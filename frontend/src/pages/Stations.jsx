@@ -10,6 +10,7 @@ import { MapPin, SlidersHorizontal, Navigation, Plus, Minus, Layers, Zap } from 
 import SearchBar from '../components/SearchBar';
 import FilterPanel from '../components/FilterPanel';
 import StationCard from '../components/StationCard';
+import StationMap from '../components/StationMap';
 import Loading, { EmptyState } from '../components/Loading';
 import { stationService } from '../services/stationService';
 import '../styles/stations.css';
@@ -98,106 +99,13 @@ export default function Stations() {
             </div>
           </div>
 
-          {/* Interactive Simulated Map Box */}
-          <div className="map-view-box">
-            <div className="map-grid-pattern" />
-
-            {/* Map Controls */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-                zIndex: 10,
-              }}
-            >
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{ width: '32px', height: '32px', padding: 0 }}
-                title="Zoom in"
-              >
-                <Plus size={14} />
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{ width: '32px', height: '32px', padding: 0 }}
-                title="Zoom out"
-              >
-                <Minus size={14} />
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{ width: '32px', height: '32px', padding: 0 }}
-                title="Map Layers"
-              >
-                <Layers size={14} />
-              </button>
-            </div>
-
-            {/* City Center Marker Label */}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '16px',
-                left: '16px',
-                background: 'rgba(17, 24, 39, 0.85)',
-                color: '#ffffff',
-                padding: '6px 14px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                border: '1px solid #374151',
-              }}
-            >
-              <Navigation size={13} style={{ color: 'var(--primary)' }} />
-              <span>Grid Map Mode &bull; Real-Time Geo Tracking</span>
-            </div>
-
-            {/* Render Simulated Station Markers */}
-            {stations.slice(0, 7).map((s, idx) => {
-              // Deterministic spread across canvas based on index
-              const positions = [
-                { top: '35%', left: '25%' },
-                { top: '60%', left: '40%' },
-                { top: '45%', left: '65%' },
-                { top: '25%', left: '75%' },
-                { top: '75%', left: '20%' },
-                { top: '30%', left: '50%' },
-                { top: '70%', left: '80%' },
-              ];
-              const pos = positions[idx % positions.length];
-              const isSelected = selectedStation?.stationId === s.stationId;
-
-              return (
-                <div
-                  key={s.stationId}
-                  className={`map-pin ${isSelected ? 'active' : ''}`}
-                  style={{ top: pos.top, left: pos.left }}
-                  onClick={() => setSelectedStation(s)}
-                >
-                  <div className="map-pin-bubble">
-                    <Zap size={12} style={{ color: isSelected ? '#ffffff' : 'var(--primary)' }} />
-                    <span>{s.stationName.split(' ')[0]}</span>
-                  </div>
-                  <div
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      backgroundColor: isSelected ? 'var(--primary)' : '#ffffff',
-                      borderRadius: '50%',
-                      marginTop: '4px',
-                      boxShadow: '0 0 8px rgba(0,0,0,0.5)',
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          {/* Genuine Geographic Interactive Leaflet Map */}
+          <StationMap
+            stations={stations}
+            selectedStation={selectedStation}
+            onSelectStation={setSelectedStation}
+            height="440px"
+          />
 
           {/* Results Grid */}
           {loading ? (

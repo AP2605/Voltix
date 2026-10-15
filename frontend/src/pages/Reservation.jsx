@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { stationService } from '../services/stationService';
 import { reservationService } from '../services/reservationService';
+import { vehicleService } from '../services/vehicleService';
 import { dataStore } from '../services/dataStore';
 import Loading, { ErrorState } from '../components/Loading';
 
@@ -42,12 +43,40 @@ export default function Reservation() {
   const [startTime, setStartTime] = useState('11:00');
   const [endTime, setEndTime] = useState('12:00');
 
+  const handleRegisterDefaultVehicle = async () => {
+    if (!currentUser) return;
+    try {
+      setSubmitting(true);
+      setError('');
+      const newV = await vehicleService.addVehicle(currentUser.userId, {
+        modelId: 1,
+        registrationNumber: `TN-01-EV-${Math.floor(1000 + Math.random() * 9000)}`,
+        batteryPercentage: 85.0,
+      });
+      const updatedList = [newV.data, ...vehicles];
+      setVehicles(updatedList);
+      setSelectedVehicleId(newV.data.vehicleId);
+    } catch (err) {
+      setError(err.message || 'Failed to register EV profile.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     async function load() {
       if (!currentUser) return;
       setLoading(true);
       try {
-        const userVehicles = dataStore.getVehicles(currentUser.userId);
+        let userVehicles = [];
+        try {
+          const vRes = await vehicleService.getVehicles(currentUser.userId);
+          userVehicles = vRes.data || [];
+        } catch (vErr) {
+          console.warn('Backend vehicles API failed, checking local store:', vErr);
+          userVehicles = dataStore.getVehicles(currentUser.userId);
+        }
+
         setVehicles(userVehicles);
         if (userVehicles.length > 0) {
           setSelectedVehicleId(userVehicles[0].vehicleId);
@@ -115,19 +144,19 @@ export default function Reservation() {
     setError('');
     try {
       const payload = {
-        userId: currentUser.userId,
-        vehicleId: selectedVehicleId,
-        stationId: station.stationId,
-        chargerId: selectedChargerId,
-        startTime: `${reservationDate} ${startTime}:00`,
-        endTime: `${reservationDate} ${endTime}:00`,
-        estimatedCost: estimatedTotal,
+        userId: Number(currentUser.userId),
+        vehicleId: Number(selectedVehicleId),
+        stationId: Number(station.stationId),
+        chargerId: Number(selectedChargerId),
+        startTime: `${reservationDate}T${startTime}:00`,
+        endTime: `${reservationDate}T${endTime}:00`,
+        estimatedCost: Number(estimatedTotal),
       };
 
       const res = await reservationService.createReservation(payload);
       setConfirmedReservation(res.data);
     } catch (err) {
-      setError(err.message || 'Slot reservation failed. The bay might be occupied.');
+      setError(err.message || 'Slot reservation failed. The bay might be occupied or reserved.');
     } finally {
       setSubmitting(false);
     }
@@ -174,7 +203,7 @@ export default function Reservation() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Reservation Reference</span>
               <strong className="mono" style={{ color: 'var(--primary)' }}>
-                VX-RES-{confirmedReservation.reservationId.toString().slice(-6)}
+                VX-RES-{confirmedReservation.reservationId ? confirmedReservation.reservationId.toString().slice(-6) : 'CONFIRMED'}
               </strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -194,8 +223,11 @@ export default function Reservation() {
               <span className="mono">{confirmedReservation.startTime} to {confirmedReservation.endTime}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid var(--border-card)' }}>
-              <span style={{ fontSize: '14px', fontWeight: 600 }}>Estimated Cost</span>
-              <strong className="mono" style={{ fontSize: '16px' }}>₹{Number(confirmedReservation.estimatedCost).toFixed(2)}</strong>
+              <span style={{ fontSize: '14px', fontWeight: 600 }}>Estimated Tariff</span>
+              <strong className="mono" style={{ fontSize: '16px' }}>₹{Number(confirmedReservation.estimatedCost || estimatedTotal || 0).toFixed(2)}</strong>
+            </div>
+            <div style={{ marginTop: '14px', padding: '10px 12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              💳 <strong>Simulated Pre-Authorization:</strong> A nominal hold of ₹50.00 is recorded against your prepaid wallet. The actual energy billing will settle seamlessly when your physical charging session completes at the bay.
             </div>
           </div>
 
@@ -249,10 +281,20 @@ export default function Reservation() {
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
             Please connect your electric vehicle to your account before making a slot reservation.
           </p>
-          <button className="btn btn-primary" onClick={() => navigate('/profile')}>
-            <Plus size={16} />
-            Register Vehicle in Profile
-          </button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" onClick={() => navigate('/profile')}>
+              <Plus size={16} />
+              Register in Profile
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleRegisterDefaultVehicle}
+              disabled={submitting}
+            >
+              {submitting ? 'Registering...' : '⚡ Quick Add Demo EV (Tata Nexon)'}
+            </button>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleConfirmReservation}>

@@ -47,12 +47,7 @@ public class WalletService {
             return walletRepository.save(newWallet);
         });
 
-        List<WalletTransactionResponse> txs = transactionRepository
-                .findByWallet_WalletIdOrderByTimestampDesc(wallet.getWalletId())
-                .stream()
-                .map(this::mapTxToDto)
-                .collect(Collectors.toList());
-
+        List<WalletTransactionResponse> txs = getCalculatedTransactions(wallet);
         return new WalletResponse(wallet.getWalletId(), userId, wallet.getBalance(), txs);
     }
 
@@ -88,35 +83,48 @@ public class WalletService {
         log.info("Wallet top-up processed: userId={}, amount=₹{}, newBalance=₹{}",
                 userId, amount, newBalance);
 
-        List<WalletTransactionResponse> txs = transactionRepository
-                .findByWallet_WalletIdOrderByTimestampDesc(wallet.getWalletId())
-                .stream()
-                .map(this::mapTxToDto)
-                .collect(Collectors.toList());
+        List<WalletTransactionResponse> txs = getCalculatedTransactions(wallet);
 
         return new WalletResponse(wallet.getWalletId(), userId, newBalance, txs);
     }
 
     @Transactional(readOnly = true)
     public List<WalletTransactionResponse> getTransactions(Integer userId) {
-        return transactionRepository.findByWallet_User_UserIdOrderByTimestampDesc(userId).stream()
-                .map(this::mapTxToDto)
-                .collect(Collectors.toList());
+        Wallet wallet = walletRepository.findByUser_UserId(userId).orElse(null);
+        if (wallet == null) {
+            return java.util.Collections.emptyList();
+        }
+        return getCalculatedTransactions(wallet);
     }
 
-    private WalletTransactionResponse mapTxToDto(WalletTransaction tx) {
-        String desc = "CREDIT".equalsIgnoreCase(tx.getTransactionType())
-                ? "Prepaid Balance Top-Up"
-                : "Charging Session Settlement";
+    private List<WalletTransactionResponse> getCalculatedTransactions(Wallet wallet) {
+        List<WalletTransaction> ascending = transactionRepository
+                .findByWallet_WalletIdOrderByTimestampAsc(wallet.getWalletId());
 
-        return new WalletTransactionResponse(
-                tx.getTransactionId(),
-                tx.getWallet().getWalletId(),
-                tx.getAmount(),
-                tx.getTransactionType(),
-                tx.getTimestamp(),
-                desc,
-                null
-        );
+        BigDecimal running = BigDecimal.ZERO;
+        List<WalletTransactionResponse> calculated = new java.util.ArrayList<>();
+        for (WalletTransaction tx : ascending) {
+            BigDecimal amt = tx.getAmount() != null ? tx.getAmount() : BigDecimal.ZERO;
+            if ("CREDIT".equalsIgnoreCase(tx.getTransactionType()) || "REFUND".equalsIgnoreCase(tx.getTransactionType())) {
+                running = running.add(amt);
+            } else if ("DEBIT".equalsIgnoreCase(tx.getTransactionType())) {
+                running = running.subtract(amt);
+            }
+            String desc = "CREDIT".equalsIgnoreCase(tx.getTransactionType())
+                    ? "Prepaid Balance Top-Up"
+                    : ("REFUND".equalsIgnoreCase(tx.getTransactionType()) ? "Session Refund" : "Charging Session Settlement");
+
+            calculated.add(new WalletTransactionResponse(
+                    tx.getTransactionId(),
+                    wallet.getWalletId(),
+                    amt,
+                    tx.getTransactionType(),
+                    tx.getTimestamp(),
+                    desc,
+                    running
+            ));
+        }
+        java.util.Collections.reverse(calculated);
+        return calculated;
     }
 }

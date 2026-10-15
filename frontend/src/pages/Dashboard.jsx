@@ -79,36 +79,40 @@ export default function Dashboard() {
 
         const activities = [];
 
-        userSessions.forEach((s) => {
+        (userSessions || []).forEach((s) => {
+          const sId = s.sessionId ? s.sessionId.toString().slice(-4) : '----';
           activities.push({
-            id: `sess-${s.sessionId}`,
+            id: `sess-${s.sessionId || Math.random()}`,
             timestamp: s.endTime || s.startTime,
-            title: `Charging Session #${s.sessionId.toString().slice(-4)} (${s.status})`,
-            subtitle: `${s.stationName} &bull; ${s.chargerNumber}`,
-            amount: s.finalCost ? `₹${s.finalCost.toFixed(2)}` : null,
+            title: `Charging Session #${sId} (${s.status || 'COMPLETED'})`,
+            subtitle: `${s.stationName || 'Voltix Station'} &bull; ${s.chargerNumber || 'Bay'}`,
+            amount: s.finalCost != null ? `₹${Number(s.finalCost).toFixed(2)}` : null,
             type: 'SESSION',
             dateRaw: s.endTime || s.startTime,
           });
         });
 
-        userWallet.transactions.forEach((tx) => {
+        (userWallet?.transactions || []).forEach((tx) => {
+          const formattedBal = tx.balanceAfter != null ? `₹${Number(tx.balanceAfter).toFixed(2)}` : '—';
+          const formattedAmt = tx.amount != null ? Number(tx.amount).toFixed(2) : '0.00';
           activities.push({
-            id: `tx-${tx.transactionId}`,
-            timestamp: tx.date,
-            title: tx.description,
-            subtitle: `Balance: ₹${tx.balanceAfter.toFixed(2)}`,
-            amount: tx.type === 'CREDIT' ? `+₹${tx.amount.toFixed(2)}` : `-₹${tx.amount.toFixed(2)}`,
-            type: tx.type,
-            dateRaw: tx.date,
+            id: `tx-${tx.transactionId || Math.random()}`,
+            timestamp: tx.date || tx.timestamp,
+            title: tx.description || 'Wallet transaction',
+            subtitle: `Balance: ${formattedBal}`,
+            amount: tx.type === 'CREDIT' ? `+₹${formattedAmt}` : `-₹${formattedAmt}`,
+            type: tx.type || 'TX',
+            dateRaw: tx.date || tx.timestamp,
           });
         });
 
-        userReservations.forEach((r) => {
+        (userReservations || []).forEach((r) => {
+          const rId = r.reservationId ? r.reservationId.toString().slice(-4) : '----';
           activities.push({
-            id: `res-${r.reservationId}`,
+            id: `res-${r.reservationId || Math.random()}`,
             timestamp: r.startTime,
-            title: `Reservation VX-${r.reservationId.toString().slice(-4)} (${r.status})`,
-            subtitle: `${r.stationName} &bull; Bay ${r.chargerNumber}`,
+            title: `Reservation VX-${rId} (${r.status || 'CONFIRMED'})`,
+            subtitle: `${r.stationName || 'Voltix Station'} &bull; Bay ${r.chargerNumber || '1'}`,
             amount: null,
             type: 'RESERVATION',
             dateRaw: r.startTime,

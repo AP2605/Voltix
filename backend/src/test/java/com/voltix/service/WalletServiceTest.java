@@ -68,7 +68,7 @@ class WalletServiceTest {
         when(walletRepository.findWithLockByUserId(1)).thenReturn(Optional.of(wallet));
         when(walletRepository.save(any(Wallet.class))).thenAnswer(i -> i.getArguments()[0]);
         when(transactionRepository.save(any(WalletTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
-        when(transactionRepository.findByWallet_WalletIdOrderByTimestampDesc(10)).thenReturn(Collections.emptyList());
+        when(transactionRepository.findByWallet_WalletIdOrderByTimestampAsc(10)).thenReturn(Collections.emptyList());
 
         TopUpRequest req = new TopUpRequest(new BigDecimal("500.00"));
         WalletResponse resp = walletService.topUp(1, req);
@@ -90,7 +90,7 @@ class WalletServiceTest {
         Wallet createdWallet = new Wallet(newUser, BigDecimal.ZERO);
         createdWallet.setWalletId(20);
         when(walletRepository.save(any(Wallet.class))).thenReturn(createdWallet);
-        when(transactionRepository.findByWallet_WalletIdOrderByTimestampDesc(20)).thenReturn(Collections.emptyList());
+        when(transactionRepository.findByWallet_WalletIdOrderByTimestampAsc(20)).thenReturn(Collections.emptyList());
 
         WalletResponse resp = walletService.getWallet(2);
 
@@ -105,7 +105,8 @@ class WalletServiceTest {
         tx.setTransactionId(1);
         tx.setTimestamp(LocalDateTime.now());
 
-        when(transactionRepository.findByWallet_User_UserIdOrderByTimestampDesc(1))
+        when(walletRepository.findByUser_UserId(1)).thenReturn(Optional.of(wallet));
+        when(transactionRepository.findByWallet_WalletIdOrderByTimestampAsc(10))
                 .thenReturn(List.of(tx));
 
         List<WalletTransactionResponse> list = walletService.getTransactions(1);
@@ -113,5 +114,6 @@ class WalletServiceTest {
         assertEquals(1, list.size());
         assertEquals("CREDIT", list.get(0).getTransactionType());
         assertEquals(new BigDecimal("100.00"), list.get(0).getAmount());
+        assertEquals(new BigDecimal("100.00"), list.get(0).getBalanceAfter());
     }
 }

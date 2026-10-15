@@ -283,22 +283,29 @@ export default function History() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTransactions.map((tx) => (
-                    <tr key={tx.transactionId}>
-                      <td className="mono" style={{ fontWeight: 600 }}>TX-{tx.transactionId.toString().slice(-6)}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{tx.date}</td>
-                      <td style={{ fontWeight: 500 }}>{tx.description}</td>
-                      <td>
-                        <span className={`badge ${tx.type === 'CREDIT' ? 'badge-available' : 'badge-maintenance'}`}>
-                          {tx.type}
-                        </span>
-                      </td>
-                      <td className="mono" style={{ fontWeight: 700, color: tx.type === 'CREDIT' ? '#059669' : '#dc2626' }}>
-                        {tx.type === 'CREDIT' ? `+₹${tx.amount.toFixed(2)}` : `-₹${tx.amount.toFixed(2)}`}
-                      </td>
-                      <td className="mono">₹{tx.balanceAfter.toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {filteredTransactions.map((tx, idx) => {
+                    const isCredit = tx.type === 'CREDIT';
+                    const formattedAmount = Number(tx.amount || 0).toFixed(2);
+                    const formattedBalance = tx.balanceAfter != null ? `₹${Number(tx.balanceAfter).toFixed(2)}` : '—';
+                    const txIdStr = tx.transactionId ? tx.transactionId.toString() : String(idx + 1);
+
+                    return (
+                      <tr key={tx.transactionId || idx}>
+                        <td className="mono" style={{ fontWeight: 600 }}>TX-{txIdStr.slice(-6)}</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{tx.date || tx.timestamp || 'N/A'}</td>
+                        <td style={{ fontWeight: 500 }}>{tx.description || 'Wallet transaction'}</td>
+                        <td>
+                          <span className={`badge ${isCredit ? 'badge-available' : 'badge-maintenance'}`}>
+                            {tx.type || 'TX'}
+                          </span>
+                        </td>
+                        <td className="mono" style={{ fontWeight: 700, color: isCredit ? '#059669' : '#dc2626' }}>
+                          {isCredit ? `+₹${formattedAmount}` : `-₹${formattedAmount}`}
+                        </td>
+                        <td className="mono">{formattedBalance}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -301,6 +301,67 @@ export default function Auth({ defaultMode = 'login' }) {
                     </div>
                   </div>
 
+                  {/* 1-Click Demo Credentials Quick Fill */}
+                  <div
+                    className="stagger-item"
+                    style={{
+                      animationDelay: '60ms',
+                      background: 'rgba(16, 185, 129, 0.06)',
+                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '10px 14px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--primary)', fontWeight: 700 }}>
+                        Quick Demo Fill
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>pass: voltix2026</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '11.5px', padding: '4px 6px', textAlign: 'center' }}
+                        onClick={() => {
+                          setLoginEmail('rahul.verma@gmail.com');
+                          setLoginPassword('voltix2026');
+                          setSelectedRole('USER');
+                          if (loginError) setLoginError('');
+                        }}
+                      >
+                        ⚡ Driver
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '11.5px', padding: '4px 6px', textAlign: 'center' }}
+                        onClick={() => {
+                          setLoginEmail('rajesh.operator@voltix.in');
+                          setLoginPassword('voltix2026');
+                          setSelectedRole('OPERATOR');
+                          if (loginError) setLoginError('');
+                        }}
+                      >
+                        🔧 Operator
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '11.5px', padding: '4px 6px', textAlign: 'center' }}
+                        onClick={() => {
+                          setLoginEmail('ayush.admin@voltix.in');
+                          setLoginPassword('voltix2026');
+                          setSelectedRole('ADMIN');
+                          if (loginError) setLoginError('');
+                        }}
+                      >
+                        🛡️ Admin
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Polished Inline Error Alert */}
                   {loginError && (
                     <div className="auth-error-banner" role="alert" aria-live="polite">

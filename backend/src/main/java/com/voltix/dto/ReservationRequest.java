@@ -1,5 +1,6 @@
 package com.voltix.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,9 +16,11 @@ public class ReservationRequest {
     private Integer chargerId;
 
     @NotNull(message = "Reservation start time is required")
+    @JsonFormat(pattern = "yyyy-MM-dd['T'][ ]HH:mm[:ss]")
     private LocalDateTime startTime;
 
     @NotNull(message = "Reservation end time is required")
+    @JsonFormat(pattern = "yyyy-MM-dd['T'][ ]HH:mm[:ss]")
     private LocalDateTime endTime;
 
     private BigDecimal estimatedCost;
