@@ -287,3 +287,22 @@ input, select, textarea {
     grid-template-columns: 1fr;
   }
 }
+
+@media print {
+  .no-print,
+  .navbar,
+  nav,
+  header {
+    display: none !important;
+  }
+  body, .main-content, .page-wrapper {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

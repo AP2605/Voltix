@@ -77,6 +77,17 @@ export const paymentService = {
       throw err;
     }
   },
+  async getInvoice(sessionId) {
+    try {
+      return await apiRequest(`/payments/invoice/${sessionId}`);
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const session = dataStore.getSession(sessionId);
+        return mockFetch(session);
+      }
+      throw err;
+    }
+  },
 };
 
 export default paymentService;

@@ -4,9 +4,8 @@
 // Description: Station search & discovery locator with interactive map visualization.
 // ============================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, SlidersHorizontal, Navigation, Plus, Minus, Layers, Zap } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import FilterPanel from '../components/FilterPanel';
 import StationCard from '../components/StationCard';
@@ -22,6 +21,8 @@ export default function Stations() {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [networkError, setNetworkError] = useState('');
 
   const [filters, setFilters] = useState({
     search: '',
@@ -32,30 +33,73 @@ export default function Stations() {
     minRating: '',
   });
 
-  const loadStations = async () => {
-    setLoading(true);
-    try {
-      const [stationRes, cityRes] = await Promise.all([
-        stationService.getStations(filters),
-        stationService.getCities(),
-      ]);
-      setStations(stationRes.data);
-      setCities(cityRes.data);
-      if (stationRes.data.length > 0 && !selectedStation) {
-        setSelectedStation(stationRes.data[0]);
-      }
-    } catch (err) {
-      console.error('Failed to load stations:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Request cancellation tracker to prevent race conditions
+  const requestIdRef = useRef(0);
 
+  // Debounce search input by 300ms
   useEffect(() => {
-    loadStations();
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchInput }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Load cities once on mount
+  useEffect(() => {
+    async function loadCities() {
+      try {
+        const cityRes = await stationService.getCities();
+        setCities(cityRes.data || []);
+      } catch (err) {
+        console.warn('Failed to load cities:', err);
+      }
+    }
+    loadCities();
+  }, []);
+
+  // Fetch stations when filters change
+  useEffect(() => {
+    const currentReqId = ++requestIdRef.current;
+    setLoading(true);
+    setNetworkError('');
+
+    async function fetchFilteredStations() {
+      try {
+        const stationRes = await stationService.getStations(filters);
+        // Only apply if this is still the latest request
+        if (currentReqId === requestIdRef.current) {
+          const fetchedStations = stationRes.data || [];
+          setStations(fetchedStations);
+
+          if (fetchedStations.length > 0) {
+            // If previous selected station is in results, keep it, otherwise pick first
+            setSelectedStation((prev) => {
+              if (prev && fetchedStations.some((s) => s.stationId === prev.stationId)) {
+                return prev;
+              }
+              return fetchedStations[0];
+            });
+          } else {
+            setSelectedStation(null);
+          }
+        }
+      } catch (err) {
+        if (currentReqId === requestIdRef.current) {
+          console.error('Failed to load stations:', err);
+          setNetworkError(err.message || 'Unable to load charging stations.');
+        }
+      } finally {
+        if (currentReqId === requestIdRef.current) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchFilteredStations();
   }, [filters]);
 
   const handleResetFilters = () => {
+    setSearchInput('');
     setFilters({
       search: '',
       cityId: '',
@@ -66,13 +110,17 @@ export default function Stations() {
     });
   };
 
+  const handleSelectStation = (station) => {
+    setSelectedStation(station);
+  };
+
   return (
     <div className="page-wrapper">
       <div className="dashboard-header">
         <div>
           <h1 className="header-title">Charging Station Locator</h1>
           <p className="header-subtitle">
-            Search, filter, and inspect operational charging hubs across {cities.length || 6} cities
+            Search, filter, and inspect operational charging hubs across {cities.length || 8} cities
           </p>
         </div>
       </div>
@@ -90,8 +138,8 @@ export default function Stations() {
         <main className="stations-main">
           <div className="stations-toolbar">
             <SearchBar
-              value={filters.search}
-              onChange={(val) => setFilters({ ...filters, search: val })}
+              value={searchInput}
+              onChange={(val) => setSearchInput(val)}
               placeholder="Search station name, city, or address..."
             />
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -99,12 +147,29 @@ export default function Stations() {
             </div>
           </div>
 
+          {networkError && (
+            <div
+              style={{
+                padding: '12px 16px',
+                background: '#fee2e2',
+                border: '1px solid #fca5a5',
+                borderRadius: 'var(--radius-md)',
+                color: '#991b1b',
+                fontSize: '13.5px',
+                marginBottom: '16px',
+              }}
+            >
+              ⚠️ {networkError}
+            </div>
+          )}
+
           {/* Genuine Geographic Interactive Leaflet Map */}
           <StationMap
             stations={stations}
             selectedStation={selectedStation}
-            onSelectStation={setSelectedStation}
+            onSelectStation={handleSelectStation}
             height="440px"
+            searchQuery={filters.search}
           />
 
           {/* Results Grid */}
@@ -123,7 +188,12 @@ export default function Stations() {
           ) : (
             <div className="grid-2">
               {stations.map((station) => (
-                <StationCard key={station.stationId} station={station} />
+                <StationCard
+                  key={station.stationId}
+                  station={station}
+                  isSelected={selectedStation?.stationId === station.stationId}
+                  onSelect={handleSelectStation}
+                />
               ))}
             </div>
           )}

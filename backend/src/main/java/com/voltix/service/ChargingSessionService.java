@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +35,7 @@ public class ChargingSessionService {
     private final MeterReadingRepository meterReadingRepository;
     private final PaymentRepository paymentRepository;
     private final StoredProcedureRepository storedProcedureRepository;
+    private final Clock clock;
 
     public ChargingSessionService(ChargingSessionRepository sessionRepository,
                                   ReservationRepository reservationRepository,
@@ -41,7 +43,8 @@ public class ChargingSessionService {
                                   VehicleRepository vehicleRepository,
                                   MeterReadingRepository meterReadingRepository,
                                   PaymentRepository paymentRepository,
-                                  StoredProcedureRepository storedProcedureRepository) {
+                                  StoredProcedureRepository storedProcedureRepository,
+                                  Clock clock) {
         this.sessionRepository = sessionRepository;
         this.reservationRepository = reservationRepository;
         this.chargerRepository = chargerRepository;
@@ -49,9 +52,10 @@ public class ChargingSessionService {
         this.meterReadingRepository = meterReadingRepository;
         this.paymentRepository = paymentRepository;
         this.storedProcedureRepository = storedProcedureRepository;
+        this.clock = clock;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ConflictException.class)
     public ChargingSessionResponse startSession(Integer userId, StartSessionRequest request) {
         // Prevent multiple concurrent active charging sessions per driver
         Optional<ChargingSession> activeSession = sessionRepository.findTopByVehicle_User_UserIdAndEndTimeIsNullOrderByStartTimeDesc(userId);
@@ -68,7 +72,16 @@ public class ChargingSessionService {
                 throw new BadRequestException("Either a reservationId or both vehicleId and chargerId must be provided");
             }
 
-            LocalDateTime now = LocalDateTime.now();
+            Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle", "id", request.getVehicleId()));
+            if (!vehicle.getUser().getUserId().equals(userId)) {
+                throw new ForbiddenException("Vehicle does not belong to the authenticated user");
+            }
+            if ("DELETED".equalsIgnoreCase(vehicle.getStatus())) {
+                throw new BadRequestException("Selected vehicle has been removed from your garage");
+            }
+
+            LocalDateTime now = LocalDateTime.now(clock);
             LocalDateTime endSlot = now.plusHours(2);
 
             StoredProcedureRepository.ProcedureResult resResult = storedProcedureRepository.reserveCharger(
@@ -92,6 +105,37 @@ public class ChargingSessionService {
 
             if (!reservation.getUser().getUserId().equals(userId)) {
                 throw new ForbiddenException("Reservation does not belong to the authenticated user");
+            }
+
+            // Verify reservation has not been cancelled, completed, or expired
+            String resStatus = reservation.getStatus() != null ? reservation.getStatus().toUpperCase() : "CONFIRMED";
+            if ("CANCELLED".equals(resStatus) || "EXPIRED".equals(resStatus)) {
+                throw new ConflictException("Cannot start charging: Reservation #" + reservationId + " is " + resStatus + ".");
+            }
+            if ("COMPLETED".equals(resStatus)) {
+                throw new ConflictException("Cannot start charging: Reservation #" + reservationId + " is already completed.");
+            }
+
+            // Enforce authoritative 30-minute grace period from reservation scheduled start time
+            LocalDateTime now = LocalDateTime.now(clock);
+            LocalDateTime graceDeadline = reservation.getStartTime().plusMinutes(30);
+
+            if (now.isAfter(graceDeadline) || now.isEqual(graceDeadline)) {
+                // Automatically mark reservation CANCELLED and release charger if reserved
+                reservation.setStatus("CANCELLED");
+                reservationRepository.save(reservation);
+
+                if ("RESERVED".equalsIgnoreCase(reservation.getCharger().getStatus())) {
+                    reservation.getCharger().setStatus("AVAILABLE");
+                    chargerRepository.save(reservation.getCharger());
+                }
+
+                log.warn("Rejected start charging for expired reservation #{}: start_time={}, deadline={}, current_time={}",
+                        reservationId, reservation.getStartTime(), graceDeadline, now);
+
+                throw new ConflictException("Cannot start charging: Reservation #" + reservationId +
+                        " expired because charging was not initiated within the 30-minute grace period (grace deadline was " +
+                        graceDeadline + ").");
             }
         }
 
@@ -186,6 +230,49 @@ public class ChargingSessionService {
         return mapToDto(updatedSession);
     }
 
+    @Transactional
+    public ChargingSessionResponse autoStopSession(Integer sessionId) {
+        ChargingSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("ChargingSession", "id", sessionId));
+
+        if (session.getEndTime() != null) {
+            log.info("autoStopSession: Session #{} already concluded, skipping", sessionId);
+            return mapToDto(session);
+        }
+
+        // Add telemetry meter readings prior to concluding the session if only baseline existed
+        long readingCount = meterReadingRepository.findBySession_SessionIdOrderByReadingTimeAsc(sessionId).size();
+        if (readingCount <= 1) {
+            LocalDateTime start = session.getStartTime();
+            LocalDateTime end = LocalDateTime.now(clock);
+            long minutes = Math.max(1, Duration.between(start, end).toMinutes());
+            BigDecimal powerKw = session.getCharger().getChargerType().getPowerRating();
+
+            BigDecimal calculatedKwh = powerKw.multiply(BigDecimal.valueOf(minutes))
+                    .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("0.90"));
+
+            MeterReading finalReading = new MeterReading(
+                    session,
+                    new BigDecimal("415.00"),
+                    new BigDecimal("32.50"),
+                    calculatedKwh
+            );
+            meterReadingRepository.save(finalReading);
+        }
+
+        // Invoke ACID end_charging procedure
+        StoredProcedureRepository.ProcedureResult endResult = storedProcedureRepository.endCharging(sessionId);
+
+        log.info("autoStopSession: end_charging procedure executed: status={}, cost={}, message={}",
+                endResult.statusCode(), endResult.amount(), endResult.message());
+
+        ChargingSession updatedSession = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("ChargingSession", "id", sessionId));
+
+        return mapToDto(updatedSession);
+    }
+
     @Transactional(readOnly = true)
     public List<ChargingSessionResponse> getUserSessions(Integer userId) {
         return sessionRepository.findByVehicle_User_UserIdOrderByStartTimeDesc(userId).stream()
@@ -239,6 +326,18 @@ public class ChargingSessionService {
         dto.setFinalCost(s.getFinalCost());
         dto.setStatus(s.getEndTime() == null ? "CHARGING" : "COMPLETED");
 
+        // Authoritative Booked Duration & Expected Stop Deadline derived from reservation
+        if (s.getReservation() != null && s.getReservation().getStartTime() != null && s.getReservation().getEndTime() != null) {
+            long bookedMin = Duration.between(s.getReservation().getStartTime(), s.getReservation().getEndTime()).toMinutes();
+            dto.setBookedDurationMinutes((int) bookedMin);
+            if (s.getStartTime() != null) {
+                dto.setExpectedEndTime(s.getStartTime().plusMinutes(bookedMin));
+            }
+        } else if (s.getStartTime() != null) {
+            dto.setBookedDurationMinutes(60);
+            dto.setExpectedEndTime(s.getStartTime().plusHours(1));
+        }
+
         // Payment status lookup
         Optional<Payment> payment = paymentRepository.findBySession_SessionId(s.getSessionId());
         if (payment.isPresent()) {
@@ -251,7 +350,7 @@ public class ChargingSessionService {
 
         // Live telemetry calculations for active sessions
         if (s.getEndTime() == null) {
-            long elapsedMin = Math.max(1, Duration.between(s.getStartTime(), LocalDateTime.now()).toMinutes());
+            long elapsedMin = Math.max(1, Duration.between(s.getStartTime(), LocalDateTime.now(clock)).toMinutes());
             dto.setDurationMinutes((int) elapsedMin);
 
             BigDecimal powerKw = ch.getChargerType().getPowerRating();

@@ -53,6 +53,10 @@ public class ReservationService {
             throw new ForbiddenException("Vehicle does not belong to the authenticated user");
         }
 
+        if ("DELETED".equalsIgnoreCase(vehicle.getStatus())) {
+            throw new BadRequestException("Selected vehicle has been removed from your garage");
+        }
+
         // 2. Chronological interval validation
         if (request.getStartTime().isAfter(request.getEndTime()) || request.getStartTime().isEqual(request.getEndTime())) {
             throw new BadRequestException("Reservation start time must be strictly before end time");

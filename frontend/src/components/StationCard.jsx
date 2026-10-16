@@ -6,10 +6,10 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Zap, Clock, ShieldCheck } from 'lucide-react';
+import { MapPin, Zap, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
-export default function StationCard({ station }) {
+export default function StationCard({ station, isSelected = false, onSelect = () => {} }) {
   const navigate = useNavigate();
 
   const totalChargers = station.chargers?.length || 0;
@@ -19,22 +19,58 @@ export default function StationCard({ station }) {
       ? Math.max(...station.chargers.map((c) => c.powerKw || 0))
       : 50;
 
+  const hasCoords =
+    station.latitude != null &&
+    station.longitude != null &&
+    !isNaN(parseFloat(station.latitude)) &&
+    !isNaN(parseFloat(station.longitude));
+
   return (
-    <div className="station-card">
+    <div
+      className={`station-card ${isSelected ? 'selected-card' : ''}`}
+      onClick={() => onSelect(station)}
+      style={{
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        border: isSelected ? '2px solid var(--primary)' : undefined,
+        boxShadow: isSelected ? '0 0 0 3px rgba(16, 185, 129, 0.15), var(--shadow-md)' : undefined,
+      }}
+    >
       <div>
         <div className="station-card-header">
           <div>
-            <h3 className="station-name-text">{station.stationName}</h3>
+            <h3 className="station-name-text" style={{ color: isSelected ? 'var(--primary)' : 'var(--text-main)' }}>
+              {station.stationName}
+            </h3>
             <div className="station-city-badge">
               <MapPin size={13} />
               <span>
-                {station.cityName}, {station.state}
+                {station.cityName || ''}{station.state ? `, ${station.state}` : ''}
                 {station.distanceKm ? ` &bull; ${station.distanceKm} km away` : ''}
               </span>
             </div>
           </div>
           <StatusBadge status={station.status} size="sm" />
         </div>
+
+        {!hasCoords && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '11.5px',
+              color: '#d97706',
+              background: '#fef3c7',
+              padding: '4px 8px',
+              borderRadius: 'var(--radius-sm)',
+              marginBottom: '10px',
+            }}
+          >
+            <AlertTriangle size={13} />
+            <span>Map coordinates not available for this site</span>
+          </div>
+        )}
 
         <div className="station-meta-strip">
           <div className="meta-item">
@@ -76,7 +112,7 @@ export default function StationCard({ station }) {
         </div>
       </div>
 
-      <div className="station-footer">
+      <div className="station-footer" onClick={(e) => e.stopPropagation()}>
         <div className="station-price-box">
           <span className="price-unit-lbl">Base Tariff</span>
           <span className="price-main-val">

@@ -15,6 +15,11 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
     Optional<ChargingSession> findTopByVehicle_User_UserIdAndEndTimeIsNullOrderByStartTimeDesc(Integer userId);
     List<ChargingSession> findByCharger_Station_StationId(Integer stationId);
     Optional<ChargingSession> findByReservation_ReservationId(Integer reservationId);
+    boolean existsByReservation_ReservationId(Integer reservationId);
+    List<ChargingSession> findByEndTimeIsNull();
+
+    @Query("SELECT cs FROM ChargingSession cs LEFT JOIN FETCH cs.reservation WHERE cs.endTime IS NULL")
+    List<ChargingSession> findActiveSessionsWithReservation();
 
     @Query("SELECT cs FROM ChargingSession cs WHERE cs.charger.station.operator.userId = :operatorId ORDER BY cs.startTime DESC")
     List<ChargingSession> findByOperatorId(@Param("operatorId") Integer operatorId);

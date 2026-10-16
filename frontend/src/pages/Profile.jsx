@@ -16,32 +16,61 @@ import {
   BatteryCharging,
   Inbox,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { VEHICLE_MODELS, dataStore } from '../services/dataStore';
+import { vehicleService } from '../services/vehicleService';
 import Modal from '../components/Modal';
 
 export default function Profile() {
   const { currentUser } = useAuth();
 
   const [vehicles, setVehicles] = useState([]);
+  const [vehicleModels, setVehicleModels] = useState(VEHICLE_MODELS);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState('1');
   const [regNumber, setRegNumber] = useState('');
   const [initialSoc, setInitialSoc] = useState('65');
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const loadVehicles = () => {
+  const loadVehicles = async () => {
     if (!currentUser) return;
-    const userVehicles = dataStore.getVehicles(currentUser.userId);
-    setVehicles(userVehicles);
+    setLoading(true);
+    try {
+      const res = await vehicleService.getVehicles(currentUser.userId);
+      setVehicles(res.data || []);
+    } catch (err) {
+      console.warn('Backend vehicles fetch failed, using fallback:', err);
+      const userVehicles = dataStore.getVehicles(currentUser.userId);
+      setVehicles(userVehicles);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadVehicles();
   }, [currentUser]);
 
-  const handleAddVehicle = (e) => {
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        const res = await vehicleService.getVehicleModels();
+        if (res.data && res.data.length > 0) {
+          setVehicleModels(res.data);
+          setSelectedModelId(String(res.data[0].modelId));
+        }
+      } catch (err) {
+        console.warn('Could not load vehicle models from API:', err);
+      }
+    }
+    loadModels();
+  }, []);
+
+  const handleAddVehicle = async (e) => {
     e.preventDefault();
     setError('');
     if (!regNumber.trim()) {
@@ -49,17 +78,31 @@ export default function Profile() {
       return;
     }
 
+    setSubmitting(true);
     try {
-      dataStore.addVehicle(currentUser.userId, {
-        modelId: selectedModelId,
-        registrationNumber: regNumber,
-        initialBatteryPercentage: initialSoc,
+      await vehicleService.addVehicle(currentUser.userId, {
+        modelId: Number(selectedModelId),
+        registrationNumber: regNumber.trim().toUpperCase(),
+        batteryPercentage: parseFloat(initialSoc),
       });
-      loadVehicles();
+
+      await loadVehicles();
       setRegNumber('');
       setAddModalOpen(false);
     } catch (err) {
       setError(err.message || 'Failed to register vehicle.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteVehicle = async (vehicleId) => {
+    if (!window.confirm('Are you sure you want to remove this vehicle profile?')) return;
+    try {
+      await vehicleService.deleteVehicle(currentUser.userId, vehicleId);
+      await loadVehicles();
+    } catch (err) {
+      alert(err.message || 'Failed to delete vehicle');
     }
   };
 
@@ -113,7 +156,7 @@ export default function Profile() {
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Email Address</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, marginTop: '2px' }}>
                 <Mail size={15} style={{ color: 'var(--text-muted)' }} />
-                <span>{currentUser?.email || 'driver@voltix.in'}</span>
+                <span>{currentUser?.email || '—'}</span>
               </div>
             </div>
 
@@ -202,7 +245,7 @@ export default function Profile() {
                         {v.manufacturer} {v.modelName}
                       </h4>
                       <span className="mono" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                        {v.registrationNumber} &bull; {v.batteryCapacity} kWh Battery
+                        {v.registrationNumber} &bull; {v.batteryCapacity || '40'} kWh Battery
                       </span>
                     </div>
                   </div>
@@ -222,7 +265,7 @@ export default function Profile() {
                         Est. Range
                       </div>
                       <div className="mono" style={{ fontWeight: 700, fontSize: '15px' }}>
-                        {v.estimatedRangeKm} km
+                        {v.estimatedRangeKm || Math.round(Number(v.batteryPercentage || 80) * 3.5)} km
                       </div>
                     </div>
 
@@ -231,9 +274,19 @@ export default function Profile() {
                         Max DC Input
                       </div>
                       <div className="mono" style={{ fontWeight: 700, fontSize: '15px' }}>
-                        {v.maxPower} kW
+                        {v.maxPower || 50} kW
                       </div>
                     </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => handleDeleteVehicle(v.vehicleId)}
+                      title="Remove vehicle"
+                      style={{ padding: '6px 8px', color: '#dc2626' }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -265,7 +318,7 @@ export default function Profile() {
               value={selectedModelId}
               onChange={(e) => setSelectedModelId(e.target.value)}
             >
-              {VEHICLE_MODELS.map((m) => (
+              {vehicleModels.map((m) => (
                 <option key={m.modelId} value={m.modelId}>
                   {m.manufacturer} {m.modelName} &bull; {m.batteryCapacity} kWh ({m.maxChargingPower} kW max)
                 </option>
@@ -313,8 +366,8 @@ export default function Profile() {
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              Register Vehicle
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Registering...' : 'Register Vehicle'}
             </button>
           </div>
         </form>

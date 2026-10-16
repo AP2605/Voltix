@@ -1,7 +1,8 @@
 // ============================================================================
 // VOLTIX: Urban EV Charging Network Management System
 // File: Reservation.jsx
-// Description: Slot booking screen backed by persistent user records.
+// Description: Slot booking screen backed by persistent user records,
+//              custom Voltix Date/Time pickers, and dynamic duration tariffs.
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -16,12 +17,15 @@ import {
   ArrowRight,
   MapPin,
   Plus,
+  Play,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { stationService } from '../services/stationService';
 import { reservationService } from '../services/reservationService';
 import { vehicleService } from '../services/vehicleService';
 import { dataStore } from '../services/dataStore';
+import VoltixDatePicker from '../components/VoltixDatePicker';
+import VoltixTimePicker from '../components/VoltixTimePicker';
 import Loading, { ErrorState } from '../components/Loading';
 
 export default function Reservation() {
@@ -39,7 +43,10 @@ export default function Reservation() {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [selectedChargerId, setSelectedChargerId] = useState('');
-  const [reservationDate, setReservationDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Themed Date & Time State
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [reservationDate, setReservationDate] = useState(todayStr);
   const [startTime, setStartTime] = useState('11:00');
   const [endTime, setEndTime] = useState('12:00');
 
@@ -67,6 +74,7 @@ export default function Reservation() {
     async function load() {
       if (!currentUser) return;
       setLoading(true);
+      setError('');
       try {
         let userVehicles = [];
         try {
@@ -79,16 +87,21 @@ export default function Reservation() {
 
         setVehicles(userVehicles);
         if (userVehicles.length > 0) {
-          setSelectedVehicleId(userVehicles[0].vehicleId);
+          setSelectedVehicleId((prev) => {
+            if (prev && userVehicles.some((v) => v.vehicleId === Number(prev))) {
+              return prev;
+            }
+            return String(userVehicles[0].vehicleId);
+          });
         }
 
         const res = await stationService.getStationById(stationId || 1);
         setStation(res.data);
         const avail = res.data.chargers?.find((c) => c.status === 'AVAILABLE');
         if (avail) {
-          setSelectedChargerId(avail.chargerId);
+          setSelectedChargerId(String(avail.chargerId));
         } else if (res.data.chargers?.length > 0) {
-          setSelectedChargerId(res.data.chargers[0].chargerId);
+          setSelectedChargerId(String(res.data.chargers[0].chargerId));
         }
       } catch (err) {
         setError(err.message || 'Station not found');
@@ -99,35 +112,50 @@ export default function Reservation() {
     load();
   }, [stationId, currentUser]);
 
-  if (loading) {
-    return (
-      <div className="page-wrapper">
-        <Loading message="Loading station and bay booking schedule..." />
-      </div>
-    );
-  }
-
-  if (error && !station) {
-    return (
-      <div className="page-wrapper">
-        <ErrorState error={error} retry={() => navigate('/stations')} />
-      </div>
-    );
-  }
+  // Dynamic Cost Calculation Summary with 15-min precision
+  const [sH, sM] = (startTime || '11:00').split(':').map(Number);
+  const [eH, eM] = (endTime || '12:00').split(':').map(Number);
+  const startTotalMinutes = sH * 60 + sM;
+  const endTotalMinutes = eH * 60 + eM;
+  const rawDurationMinutes = endTotalMinutes - startTotalMinutes;
+  const isInvalidInterval = rawDurationMinutes <= 0;
+  const durationMinutes = isInvalidInterval ? 60 : rawDurationMinutes;
+  const durationHours = durationMinutes / 60;
 
   const selectedVehicle = vehicles.find((v) => v.vehicleId === Number(selectedVehicleId));
   const selectedCharger = station?.chargers?.find((c) => c.chargerId === Number(selectedChargerId));
 
-  // Dynamic Cost Calculation Summary
-  const startHour = parseInt(startTime.split(':')[0] || '11', 10);
-  const endHour = parseInt(endTime.split(':')[0] || '12', 10);
-  const durationHours = Math.max(1, endHour - startHour);
   const powerKw = selectedCharger?.powerKw || 50;
-  const estimatedEnergyKwh = Math.round(powerKw * durationHours * 0.7);
+  const estimatedEnergyKwh = Number((powerKw * durationHours * 0.75).toFixed(1));
   const ratePerKwh = selectedCharger?.pricePerKwh || station?.basePricePerKwh || 14.0;
   const energyCost = estimatedEnergyKwh * ratePerKwh;
   const reservationFee = 50.0;
   const estimatedTotal = energyCost + reservationFee;
+
+  // Format Duration for UI
+  const formatDurationText = (minutes) => {
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m`;
+    if (hrs > 0) return `${hrs} hour${hrs > 1 ? 's' : ''}`;
+    return `${mins} mins`;
+  };
+
+  const handleStartTimeChange = (newStart) => {
+    setStartTime(newStart);
+    const [h, m] = newStart.split(':').map(Number);
+    const startMins = h * 60 + m;
+    const [endH, endM] = endTime.split(':').map(Number);
+    const endMins = endH * 60 + endM;
+
+    // Auto-advance endTime if startTime is equal or after endTime
+    if (startMins >= endMins) {
+      const advancedMins = Math.min(23 * 60 + 45, startMins + 60);
+      const advH = String(Math.floor(advancedMins / 60)).padStart(2, '0');
+      const advM = String(advancedMins % 60).padStart(2, '0');
+      setEndTime(`${advH}:${advM}`);
+    }
+  };
 
   const handleConfirmReservation = async (e) => {
     e.preventDefault();
@@ -137,6 +165,10 @@ export default function Reservation() {
     }
     if (!selectedChargerId) {
       setError('Please select an available charging bay.');
+      return;
+    }
+    if (isInvalidInterval) {
+      setError('Reservation start time must be strictly before end time.');
       return;
     }
 
@@ -161,6 +193,22 @@ export default function Reservation() {
       setSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <Loading message="Loading station and bay booking schedule..." />
+      </div>
+    );
+  }
+
+  if (error && !station) {
+    return (
+      <div className="page-wrapper">
+        <ErrorState error={error} retry={() => navigate('/stations')} />
+      </div>
+    );
+  }
 
   // Confirmation Success View
   if (confirmedReservation) {
@@ -227,16 +275,24 @@ export default function Reservation() {
               <strong className="mono" style={{ fontSize: '16px' }}>₹{Number(confirmedReservation.estimatedCost || estimatedTotal || 0).toFixed(2)}</strong>
             </div>
             <div style={{ marginTop: '14px', padding: '10px 12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-              💳 <strong>Simulated Pre-Authorization:</strong> A nominal hold of ₹50.00 is recorded against your prepaid wallet. The actual energy billing will settle seamlessly when your physical charging session completes at the bay.
+              💳 <strong>Reservation Security Deposit:</strong> A nominal slot lock fee of ₹50.00 is allocated from your wallet. Final energy charges settle idempotently upon session conclusion.
+            </div>
+            <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(245, 158, 11, 0.25)', fontSize: '12px', color: '#92400e' }}>
+              ⏱️ <strong>30-Minute Arrival Grace Window:</strong> Please connect and start charging within 30 minutes of your scheduled start time. Uninitiated reservations are automatically cancelled and the bay released.
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" onClick={() => navigate('/dashboard')}>
-              Back to Dashboard
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate(`/charging?reservationId=${confirmedReservation.reservationId}`)}
+              style={{ background: '#059669', borderColor: '#059669' }}
+            >
+              <Zap size={16} />
+              🔌 Plug In & Start Charging Now
             </button>
-            <button className="btn btn-primary" onClick={() => navigate('/history')}>
-              View My Reservations
+            <button className="btn btn-secondary" onClick={() => navigate('/history')}>
+              View in History
               <ArrowRight size={16} />
             </button>
           </div>
@@ -282,17 +338,9 @@ export default function Reservation() {
             Please connect your electric vehicle to your account before making a slot reservation.
           </p>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" onClick={() => navigate('/profile')}>
+            <button className="btn btn-primary" onClick={() => navigate('/profile')}>
               <Plus size={16} />
-              Register in Profile
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleRegisterDefaultVehicle}
-              disabled={submitting}
-            >
-              {submitting ? 'Registering...' : '⚡ Quick Add Demo EV (Tata Nexon)'}
+              Register Vehicle in Profile
             </button>
           </div>
         </div>
@@ -305,7 +353,7 @@ export default function Reservation() {
               <div className="card">
                 <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Car size={18} style={{ color: 'var(--primary)' }} />
-                  Select Vehicle
+                  Select Registered Vehicle
                 </h3>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -313,10 +361,11 @@ export default function Reservation() {
                     className="form-control"
                     value={selectedVehicleId}
                     onChange={(e) => setSelectedVehicleId(e.target.value)}
+                    required
                   >
                     {vehicles.map((v) => (
                       <option key={v.vehicleId} value={v.vehicleId}>
-                        {v.manufacturer} {v.modelName} &bull; {v.registrationNumber} ({v.batteryCapacity} kWh)
+                        {v.manufacturer} {v.modelName} &bull; {v.registrationNumber} ({v.batteryCapacity || '40'} kWh)
                       </option>
                     ))}
                   </select>
@@ -333,12 +382,12 @@ export default function Reservation() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {station.chargers?.map((ch) => {
                     const isAvailable = ch.status === 'AVAILABLE';
-                    const isSelected = selectedChargerId === ch.chargerId;
+                    const isSelected = selectedChargerId === String(ch.chargerId);
 
                     return (
                       <div
                         key={ch.chargerId}
-                        onClick={() => isAvailable && setSelectedChargerId(ch.chargerId)}
+                        onClick={() => isAvailable && setSelectedChargerId(String(ch.chargerId))}
                         style={{
                           padding: '14px 16px',
                           border: `2px solid ${isSelected ? 'var(--primary)' : 'var(--border-card)'}`,
@@ -349,6 +398,7 @@ export default function Reservation() {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
+                          transition: 'all 0.15s ease',
                         }}
                       >
                         <div>
@@ -356,7 +406,7 @@ export default function Reservation() {
                             {ch.chargerNumber} &bull; {ch.connectorType}
                           </div>
                           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                            Rated Power: {ch.powerKw} kW &bull; ₹{ch.pricePerKwh || station.basePricePerKwh}/kWh
+                            Rated Power: {ch.powerKw} kW &bull; ₹{Number(ch.pricePerKwh || station.basePricePerKwh || 14).toFixed(2)}/kWh
                           </div>
                         </div>
                         <span className={`badge badge-${ch.status.toLowerCase()}`}>
@@ -368,7 +418,7 @@ export default function Reservation() {
                 </div>
               </div>
 
-              {/* Date and Time Slot Picker */}
+              {/* Redesigned Voltix Date and Time Selectors */}
               <div className="card">
                 <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Calendar size={18} style={{ color: 'var(--primary)' }} />
@@ -376,102 +426,156 @@ export default function Reservation() {
                 </h3>
 
                 <div className="form-group">
-                  <label className="form-label">Reservation Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
+                  <VoltixDatePicker
                     value={reservationDate}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setReservationDate(e.target.value)}
-                    required
+                    onChange={setReservationDate}
+                    minDate={todayStr}
+                    label="Reservation Date"
                   />
                 </div>
 
                 <div className="grid-2">
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Start Time</label>
-                    <input
-                      type="time"
-                      className="form-control"
+                    <VoltixTimePicker
                       value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      required
+                      onChange={handleStartTimeChange}
+                      label="Start Time"
                     />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">End Time</label>
-                    <input
-                      type="time"
-                      className="form-control"
+                    <VoltixTimePicker
                       value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      required
+                      onChange={setEndTime}
+                      label="End Time"
+                      minTime={startTime}
                     />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Booking Summary & Final Confirmation */}
-            <div>
-              <div className="card" style={{ position: 'sticky', top: '96px' }}>
-                <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '16px' }}>
-                  Booking Summary
-                </h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Location</span>
-                    <span style={{ fontWeight: 600 }}>{station.stationName}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Bay Selected</span>
-                    <span className="mono" style={{ fontWeight: 600 }}>
-                      {selectedCharger ? `${selectedCharger.chargerNumber} (${selectedCharger.powerKw} kW)` : 'None'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Estimated Delivery</span>
-                    <span className="mono" style={{ fontWeight: 600 }}>~{estimatedEnergyKwh} kWh</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Energy Tariff</span>
-                    <span className="mono">₹{ratePerKwh.toFixed(2)}/kWh</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Slot Lock Fee</span>
-                    <span className="mono">₹{reservationFee.toFixed(2)}</span>
                   </div>
                 </div>
 
                 <div
                   style={{
-                    borderTop: '2px dashed var(--border-card)',
-                    paddingTop: '16px',
-                    marginBottom: '20px',
+                    marginTop: '12px',
+                    padding: '8px 12px',
+                    background: 'var(--bg-page)',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-light)',
                     display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'space-between',
-                    alignItems: 'baseline',
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
                   }}
                 >
-                  <span style={{ fontSize: '16px', fontWeight: 700 }}>Estimated Total</span>
-                  <div style={{ textAlign: 'right' }}>
-                    <div className="mono" style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)' }}>
-                      ₹{estimatedTotal.toFixed(2)}
-                    </div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Final bill settled after session completion
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Clock size={14} style={{ color: 'var(--primary)' }} />
+                    Slot Duration:
+                  </span>
+                  <strong style={{ color: 'var(--text-main)' }}>
+                    {formatDurationText(durationMinutes)} ({Math.round(durationMinutes / 15)} slots of 15m)
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Authoritative Tariff Estimation & Confirm */}
+            <div>
+              <div className="card" style={{ position: 'sticky', top: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>
+                  Booking Summary & Tariff
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Station</span>
+                    <strong style={{ textAlign: 'right' }}>{station.stationName}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Location</span>
+                    <span style={{ textAlign: 'right' }}>{station.cityName}, {station.state}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Assigned Bay</span>
+                    <span className="mono" style={{ fontWeight: 600 }}>
+                      {selectedCharger?.chargerNumber || 'Select Bay'} ({selectedCharger?.connectorType || '—'})
                     </span>
                   </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Selected EV</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {selectedVehicle ? `${selectedVehicle.manufacturer} ${selectedVehicle.modelName}` : 'None'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Booking Interval</span>
+                    <span className="mono" style={{ fontWeight: 600 }}>
+                      {startTime} – {endTime} ({formatDurationText(durationMinutes)})
+                    </span>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--border-light)', margin: '4px 0' }} />
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Rate per kWh</span>
+                    <span className="mono">₹{Number(ratePerKwh).toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Est. Energy Delivered</span>
+                    <span className="mono">{estimatedEnergyKwh} kWh</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Energy Subtotal</span>
+                    <span className="mono">₹{energyCost.toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Slot Reservation Hold</span>
+                    <span className="mono">₹{reservationFee.toFixed(2)}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      borderTop: '2px solid var(--border-card)',
+                      paddingTop: '12px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, fontSize: '15px' }}>Estimated Total</span>
+                    <strong className="mono" style={{ fontSize: '20px', color: 'var(--primary)' }}>
+                      ₹{estimatedTotal.toFixed(2)}
+                    </strong>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    margin: '16px 0 20px',
+                    padding: '10px 12px',
+                    background: 'var(--bg-page)',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '11.5px',
+                    color: 'var(--text-muted)',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  ℹ️ Slot will be reserved for 15 minutes past start time. Pre-authorization hold settles against final energy meter telemetry.
                 </div>
 
                 <button
                   type="submit"
-                  className="btn btn-primary btn-block btn-lg"
-                  disabled={submitting || !selectedChargerId || !selectedVehicleId}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '12px' }}
+                  disabled={submitting || !selectedChargerId || !selectedVehicleId || isInvalidInterval}
                 >
-                  {submitting ? 'Confirming Slot...' : 'Confirm & Hold Bay'}
-                  <ArrowRight size={16} />
+                  {submitting ? 'Locking Slot...' : 'Confirm Slot Reservation'}
                 </button>
               </div>
             </div>

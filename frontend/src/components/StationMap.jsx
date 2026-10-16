@@ -2,7 +2,7 @@
 // VOLTIX: Urban EV Charging Network Management System
 // File: StationMap.jsx
 // Description: Interactive geographic map with OpenStreetMap tiles, custom
-//              Voltix status pins, cluster support, and actionable popups.
+//              Voltix status pins, auto-pan/zoom on search, and synchronized popups.
 // ============================================================================
 
 import React, { useEffect, useRef } from 'react';
@@ -24,16 +24,16 @@ function createPinIcon(status = 'AVAILABLE', isSelected = false) {
   }
 
   const pulseHtml = isSelected
-    ? `<div style="position: absolute; top: -6px; left: -6px; width: 44px; height: 44px; border-radius: 50%; background: ${glowColor}; animation: voltixPulse 1.8s infinite ease-out; z-index: 1;"></div>`
+    ? `<div style="position: absolute; top: -8px; left: -8px; width: 48px; height: 48px; border-radius: 50%; background: ${glowColor}; animation: voltixPulse 1.8s infinite ease-out; z-index: 1;"></div>`
     : '';
 
-  const border = isSelected ? '3px solid #ffffff' : '2px solid rgba(255, 255, 255, 0.85)';
-  const transform = isSelected ? 'scale(1.15)' : 'scale(1.0)';
+  const border = isSelected ? '3px solid #ffffff' : '2px solid rgba(255, 255, 255, 0.9)';
+  const transform = isSelected ? 'scale(1.2)' : 'scale(1.0)';
 
   const html = `
     <div style="position: relative; width: 32px; height: 32px; cursor: pointer; transition: transform 0.2s ease;">
       ${pulseHtml}
-      <div style="position: relative; z-index: 2; width: 32px; height: 32px; border-radius: 50%; background: ${pinColor}; border: ${border}; transform: ${transform}; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+      <div style="position: relative; z-index: 2; width: 32px; height: 32px; border-radius: 50%; background: ${pinColor}; border: ${border}; transform: ${transform}; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
@@ -55,10 +55,13 @@ export default function StationMap({
   selectedStation = null,
   onSelectStation = () => {},
   height = '420px',
+  searchQuery = '',
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersLayerRef = useRef(null);
+  const markersMapRef = useRef(new Map());
+  const prevStationsKeyRef = useRef('');
   const navigate = useNavigate();
 
   // Initialize Map
@@ -92,23 +95,26 @@ export default function StationMap({
     };
   }, []);
 
-  // Sync Markers with Stations Data
+  // Sync Markers and bounds when stations list updates
   useEffect(() => {
     const map = mapInstanceRef.current;
     const markersLayer = markersLayerRef.current;
     if (!map || !markersLayer) return;
 
     markersLayer.clearLayers();
+    markersMapRef.current.clear();
 
     if (!stations || stations.length === 0) return;
 
     const bounds = L.latLngBounds([]);
+    const validStations = [];
 
     stations.forEach((station) => {
       const lat = parseFloat(station.latitude);
       const lng = parseFloat(station.longitude);
       if (isNaN(lat) || isNaN(lng)) return;
 
+      validStations.push({ ...station, lat, lng });
       bounds.extend([lat, lng]);
 
       const isSelected = selectedStation?.stationId === station.stationId;
@@ -177,15 +183,34 @@ export default function StationMap({
       });
 
       markersLayer.addLayer(marker);
+      markersMapRef.current.set(station.stationId, marker);
     });
 
-    // Auto-fit bounds if stations are present and not already centered
-    if (bounds.isValid() && !selectedStation) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    }
-  }, [stations, selectedStation]);
+    // Check if stations list actually changed to avoid jittery movements
+    const currentStationsKey = validStations.map((s) => s.stationId).join(',');
+    const hasStationsChanged = currentStationsKey !== prevStationsKeyRef.current;
+    prevStationsKeyRef.current = currentStationsKey;
 
-  // Center on selected station if changed
+    if (hasStationsChanged && bounds.isValid()) {
+      if (validStations.length === 1) {
+        // Single match: pan and zoom in closely to the station
+        const s = validStations[0];
+        map.flyTo([s.lat, s.lng], 15, { duration: 1.0 });
+        const marker = markersMapRef.current.get(s.stationId);
+        if (marker) {
+          setTimeout(() => marker.openPopup(), 400);
+        }
+      } else if (validStations.length > 1) {
+        // Multiple matches: fit bounds to include all matching stations
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 14,
+        });
+      }
+    }
+  }, [stations]);
+
+  // Center on selected station and open its popup when changed
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !selectedStation) return;
@@ -193,7 +218,11 @@ export default function StationMap({
     const lat = parseFloat(selectedStation.latitude);
     const lng = parseFloat(selectedStation.longitude);
     if (!isNaN(lat) && !isNaN(lng)) {
-      map.flyTo([lat, lng], 14, { duration: 1.0 });
+      map.flyTo([lat, lng], 15, { duration: 0.8 });
+      const marker = markersMapRef.current.get(selectedStation.stationId);
+      if (marker) {
+        setTimeout(() => marker.openPopup(), 400);
+      }
     }
   }, [selectedStation]);
 

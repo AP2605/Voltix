@@ -30,6 +30,8 @@ public class ChargingSessionResponse {
     private BigDecimal currentVoltage;
     private BigDecimal currentAmperes;
     private BigDecimal currentBatteryPercentage;
+    private LocalDateTime expectedEndTime;
+    private Integer bookedDurationMinutes;
 
     public ChargingSessionResponse() {}
 
@@ -107,4 +109,10 @@ public class ChargingSessionResponse {
 
     public BigDecimal getCurrentBatteryPercentage() { return currentBatteryPercentage; }
     public void setCurrentBatteryPercentage(BigDecimal currentBatteryPercentage) { this.currentBatteryPercentage = currentBatteryPercentage; }
+
+    public LocalDateTime getExpectedEndTime() { return expectedEndTime; }
+    public void setExpectedEndTime(LocalDateTime expectedEndTime) { this.expectedEndTime = expectedEndTime; }
+
+    public Integer getBookedDurationMinutes() { return bookedDurationMinutes; }
+    public void setBookedDurationMinutes(Integer bookedDurationMinutes) { this.bookedDurationMinutes = bookedDurationMinutes; }
 }

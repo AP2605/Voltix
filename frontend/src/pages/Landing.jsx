@@ -21,17 +21,33 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import Modal from '../components/Modal';
 import '../styles/landing.css';
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { currentUser, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const handleFindChargers = () => {
+    if (isAuthenticated) {
+      navigate('/stations');
+    } else {
+      setShowAuthModal(true);
+    }
+  };
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
       {/* Navigation */}
       <nav className="landing-nav">
-        <div className="brand-logo">
+        <div className="brand-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <div className="brand-icon">
             <Zap size={20} />
           </div>
@@ -45,12 +61,37 @@ export default function Landing() {
         </ul>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <Link to="/login" className="btn btn-secondary btn-sm desktop-only">
-            Sign In
-          </Link>
-          <Link to="/register" className="btn btn-primary btn-sm">
-            Get Started
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <span className="desktop-only" style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-main)' }}>
+                {currentUser?.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                className="btn btn-primary btn-sm"
+              >
+                Dashboard
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="btn btn-secondary btn-sm desktop-only"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="btn btn-secondary btn-sm desktop-only">
+                Sign In
+              </Link>
+              <Link to="/register" className="btn btn-primary btn-sm">
+                Get Started
+              </Link>
+            </>
+          )}
+
           <button
             type="button"
             className="mobile-menu-toggle"
@@ -67,11 +108,41 @@ export default function Landing() {
               <li><a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">How It Works</a></li>
               <li><a href="#features" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Features</a></li>
               <li><a href="#why-voltix" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Why VOLTIX</a></li>
-              <li style={{ borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
-                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">
-                  Sign In
-                </Link>
-              </li>
+              {isAuthenticated ? (
+                <>
+                  <li style={{ borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
+                    <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">
+                      Dashboard ({currentUser?.name})
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="mobile-nav-link"
+                      style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#dc2626' }}
+                    >
+                      Sign Out
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li style={{ borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">
+                      Sign In
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">
+                      Get Started
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         )}
@@ -93,12 +164,15 @@ export default function Landing() {
         </p>
 
         <div className="hero-actions" style={{ flexWrap: 'wrap' }}>
-          <button className="btn btn-primary btn-lg" onClick={() => navigate('/stations')}>
+          <button className="btn btn-primary btn-lg" onClick={handleFindChargers}>
             <MapPin size={18} />
-            Find a Charger
+            Find Chargers
           </button>
-          <button className="btn btn-secondary btn-lg" onClick={() => navigate('/login')}>
-            Get Started
+          <button
+            className="btn btn-secondary btn-lg"
+            onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
+          >
+            {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
             <ArrowRight size={18} />
           </button>
         </div>
@@ -276,8 +350,17 @@ export default function Landing() {
         <p style={{ fontSize: '16px', color: '#047857', maxWidth: '600px', margin: '0 auto 24px' }}>
           Connect your vehicle and find high-speed charging hubs across the network.
         </p>
-        <button className="btn btn-primary btn-lg" onClick={() => navigate('/register')}>
-          Create an Account
+        <button
+          className="btn btn-primary btn-lg"
+          onClick={() => {
+            if (isAuthenticated) {
+              navigate('/stations');
+            } else {
+              setShowAuthModal(true);
+            }
+          }}
+        >
+          {isAuthenticated ? 'Explore Stations' : 'Get Started'}
           <ArrowRight size={18} />
         </button>
       </div>
@@ -286,6 +369,61 @@ export default function Landing() {
       <footer className="landing-footer" style={{ width: '100%', boxSizing: 'border-box' }}>
         <p>VOLTIX &copy; 2026 — Urban EV Charging Network Management System.</p>
       </footer>
+
+      {/* Sign In / Sign Up Prompt Modal */}
+      <Modal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign In or Sign Up Required"
+      >
+        <div style={{ textAlign: 'center', padding: '16px 8px' }}>
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <MapPin size={28} />
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-main)' }}>
+            Sign In to Locate & Reserve Chargers
+          </h3>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.5 }}>
+            To view live charger status, inspect interactive station maps, and reserve charging bays across our urban network, please sign in or create an account.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ minWidth: '130px' }}
+              onClick={() => {
+                setShowAuthModal(false);
+                navigate('/login');
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ minWidth: '130px' }}
+              onClick={() => {
+                setShowAuthModal(false);
+                navigate('/register');
+              }}
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

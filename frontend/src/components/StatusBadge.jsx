@@ -14,6 +14,8 @@ export default function StatusBadge({ status = 'AVAILABLE', size = 'md' }) {
       case 'AVAILABLE':
       case 'ACTIVE':
       case 'SUCCESS':
+      case 'PAID':
+      case 'COMPLETED':
         return 'badge-available';
       case 'OCCUPIED':
       case 'CHARGING':
@@ -25,6 +27,7 @@ export default function StatusBadge({ status = 'AVAILABLE', size = 'md' }) {
         return 'badge-reserved';
       case 'MAINTENANCE':
       case 'FAILED':
+      case 'UNPAID':
         return 'badge-maintenance';
       case 'OFFLINE':
       case 'CANCELLED':

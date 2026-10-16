@@ -26,6 +26,9 @@ public class Vehicle {
     @Column(name = "battery_percentage", nullable = false, precision = 5, scale = 2)
     private BigDecimal batteryPercentage;
 
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "ACTIVE";
+
     public Vehicle() {}
 
     public Vehicle(User user, VehicleModel model, String registrationNumber, BigDecimal batteryPercentage) {
@@ -33,6 +36,7 @@ public class Vehicle {
         this.model = model;
         this.registrationNumber = registrationNumber;
         this.batteryPercentage = batteryPercentage != null ? batteryPercentage : new BigDecimal("100.00");
+        this.status = "ACTIVE";
     }
 
     public Integer getVehicleId() { return vehicleId; }
@@ -49,4 +53,7 @@ public class Vehicle {
 
     public BigDecimal getBatteryPercentage() { return batteryPercentage; }
     public void setBatteryPercentage(BigDecimal batteryPercentage) { this.batteryPercentage = batteryPercentage; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

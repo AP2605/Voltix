@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +37,7 @@ public class VehicleService {
 
     @Transactional(readOnly = true)
     public List<VehicleResponse> getUserVehicles(Integer userId) {
-        return vehicleRepository.findByUser_UserId(userId).stream()
+        return vehicleRepository.findActiveByUserId(userId).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -50,16 +51,16 @@ public class VehicleService {
             throw new ForbiddenException("You do not have permission to access this vehicle record");
         }
 
+        if ("DELETED".equalsIgnoreCase(vehicle.getStatus())) {
+            throw new ResourceNotFoundException("Vehicle", "id", vehicleId);
+        }
+
         return mapToDto(vehicle);
     }
 
     @Transactional
     public VehicleResponse addVehicle(Integer userId, VehicleRequest request) {
         String cleanReg = request.getRegistrationNumber().trim().toUpperCase();
-
-        if (vehicleRepository.existsByRegistrationNumber(cleanReg)) {
-            throw new ConflictException("A vehicle with registration plate " + cleanReg + " is already registered");
-        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
@@ -71,7 +72,24 @@ public class VehicleService {
                 ? request.getBatteryPercentage()
                 : new BigDecimal("80.00");
 
+        Optional<Vehicle> existingOpt = vehicleRepository.findByRegistrationNumber(cleanReg);
+        if (existingOpt.isPresent()) {
+            Vehicle existing = existingOpt.get();
+            if (existing.getStatus() == null || "ACTIVE".equalsIgnoreCase(existing.getStatus())) {
+                throw new ConflictException("A vehicle with registration plate " + cleanReg + " is already registered");
+            } else {
+                // Reactivate soft-deleted vehicle and reassign to this user
+                existing.setUser(user);
+                existing.setModel(model);
+                existing.setBatteryPercentage(soc);
+                existing.setStatus("ACTIVE");
+                existing = vehicleRepository.save(existing);
+                return mapToDto(existing);
+            }
+        }
+
         Vehicle vehicle = new Vehicle(user, model, cleanReg, soc);
+        vehicle.setStatus("ACTIVE");
         vehicle = vehicleRepository.save(vehicle);
 
         return mapToDto(vehicle);
@@ -86,6 +104,10 @@ public class VehicleService {
             throw new ForbiddenException("You do not have permission to modify this vehicle");
         }
 
+        if ("DELETED".equalsIgnoreCase(vehicle.getStatus())) {
+            throw new ResourceNotFoundException("Vehicle", "id", vehicleId);
+        }
+
         if (request.getModelId() != null && !request.getModelId().equals(vehicle.getModel().getModelId())) {
             VehicleModel model = vehicleModelRepository.findById(request.getModelId())
                     .orElseThrow(() -> new ResourceNotFoundException("VehicleModel", "id", request.getModelId()));
@@ -94,8 +116,11 @@ public class VehicleService {
 
         if (request.getRegistrationNumber() != null && !request.getRegistrationNumber().isBlank()) {
             String cleanReg = request.getRegistrationNumber().trim().toUpperCase();
-            if (!cleanReg.equals(vehicle.getRegistrationNumber()) && vehicleRepository.existsByRegistrationNumber(cleanReg)) {
-                throw new ConflictException("Registration number already registered to another vehicle");
+            if (!cleanReg.equals(vehicle.getRegistrationNumber())) {
+                Optional<Vehicle> existingOpt = vehicleRepository.findByRegistrationNumber(cleanReg);
+                if (existingOpt.isPresent() && (existingOpt.get().getStatus() == null || "ACTIVE".equalsIgnoreCase(existingOpt.get().getStatus()))) {
+                    throw new ConflictException("Registration number already registered to another active vehicle");
+                }
             }
             vehicle.setRegistrationNumber(cleanReg);
         }
@@ -117,11 +142,9 @@ public class VehicleService {
             throw new ForbiddenException("You do not have permission to delete this vehicle");
         }
 
-        try {
-            vehicleRepository.delete(vehicle);
-        } catch (Exception ex) {
-            throw new BadRequestException("Cannot delete vehicle because historical charging or reservation records reference it");
-        }
+        // Soft-delete vehicle so that user's garage is cleared, while historical sessions, reservations, and invoices remain fully intact
+        vehicle.setStatus("DELETED");
+        vehicleRepository.save(vehicle);
     }
 
     public VehicleResponse mapToDto(Vehicle v) {

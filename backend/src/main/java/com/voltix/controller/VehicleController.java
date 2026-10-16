@@ -3,6 +3,7 @@ package com.voltix.controller;
 import com.voltix.dto.ApiResponse;
 import com.voltix.dto.VehicleRequest;
 import com.voltix.dto.VehicleResponse;
+import com.voltix.exception.ForbiddenException;
 import com.voltix.security.SecurityUtils;
 import com.voltix.service.VehicleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +30,17 @@ public class VehicleController {
     @Operation(summary = "Retrieve all EV vehicles registered by the authenticated user")
     public ResponseEntity<List<VehicleResponse>> getMyVehicles() {
         Integer userId = SecurityUtils.getCurrentUserId();
+        List<VehicleResponse> vehicles = vehicleService.getUserVehicles(userId);
+        return ResponseEntity.ok(vehicles);
+    }
+
+    @GetMapping("/user/{userId}")
+    @Operation(summary = "Retrieve all active EV vehicles registered by a specific user")
+    public ResponseEntity<List<VehicleResponse>> getUserVehicles(@PathVariable("userId") Integer userId) {
+        Integer currentUserId = SecurityUtils.getCurrentUserId();
+        if (!currentUserId.equals(userId) && !SecurityUtils.hasRole("ADMIN") && !SecurityUtils.hasRole("OPERATOR")) {
+            throw new ForbiddenException("You do not have permission to view this user's vehicles");
+        }
         List<VehicleResponse> vehicles = vehicleService.getUserVehicles(userId);
         return ResponseEntity.ok(vehicles);
     }

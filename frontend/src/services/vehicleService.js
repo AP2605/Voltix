@@ -27,13 +27,27 @@ export const vehicleService = {
         body: JSON.stringify({
           modelId: Number(vehicleData.modelId || 1),
           registrationNumber: vehicleData.registrationNumber,
-          batteryPercentage: Number(vehicleData.batteryPercentage || 80.0),
+          batteryPercentage: Number(vehicleData.batteryPercentage || vehicleData.initialBatteryPercentage || 80.0),
         }),
       });
     } catch (err) {
       if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
         const vehicle = dataStore.addVehicle(userId, vehicleData);
         return mockFetch(vehicle);
+      }
+      throw err;
+    }
+  },
+
+  async deleteVehicle(userId, vehicleId) {
+    try {
+      return await apiRequest(`/vehicles/${vehicleId}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        dataStore.deleteVehicle(vehicleId);
+        return mockFetch({ message: 'Vehicle deleted successfully' });
       }
       throw err;
     }

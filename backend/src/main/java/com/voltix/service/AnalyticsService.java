@@ -110,7 +110,7 @@ public class AnalyticsService {
         resp.setActiveSession(active.map(chargingSessionService::mapToResponse).orElse(null));
 
         // 5. Vehicles
-        resp.setVehicles(vehicleRepository.findByUser_UserId(userId).stream()
+        resp.setVehicles(vehicleRepository.findActiveByUserId(userId).stream()
                 .map(vehicleService::mapToDto)
                 .collect(Collectors.toList()));
 

@@ -120,6 +120,7 @@ CREATE TABLE vehicle (
     model_id INT NOT NULL,
     registration_number VARCHAR(30) NOT NULL,
     battery_percentage DECIMAL(5, 2) NOT NULL DEFAULT 100.00,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     CONSTRAINT pk_vehicle PRIMARY KEY (vehicle_id)
 ) ENGINE = InnoDB;
 

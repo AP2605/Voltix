@@ -136,4 +136,34 @@ class PaymentServiceTest {
         assertEquals("UNPAID", inv.getPaymentStatus());
         assertTrue(inv.getFinalCost().compareTo(BigDecimal.ZERO) > 0);
     }
+
+    @Test
+    void getInvoice_UnauthorizedUser_ThrowsForbiddenException() {
+        when(sessionRepository.findById(300)).thenReturn(Optional.of(session));
+
+        assertThrows(ForbiddenException.class, () -> paymentService.getInvoice(999, 300));
+    }
+
+    @Test
+    void getInvoice_MissingOptionalFields_DoesNotCrash() {
+        ChargingSession bareSession = new ChargingSession();
+        bareSession.setSessionId(400);
+        bareSession.setVehicle(session.getVehicle()); // Same user (userId=5)
+        bareSession.setCharger(null); // No charger
+        bareSession.setStartTime(null);
+        bareSession.setEndTime(null);
+        bareSession.setEnergyConsumed(null);
+        bareSession.setFinalCost(null);
+        bareSession.setDurationMinutes(null);
+
+        when(sessionRepository.findById(400)).thenReturn(Optional.of(bareSession));
+        when(paymentRepository.findBySession_SessionId(400)).thenReturn(Optional.empty());
+
+        InvoiceResponse inv = paymentService.getInvoice(5, 400);
+
+        assertNotNull(inv);
+        assertEquals(400, inv.getSessionId());
+        assertEquals("UNPAID", inv.getPaymentStatus());
+        assertNotNull(inv.getFinalCost());
+    }
 }

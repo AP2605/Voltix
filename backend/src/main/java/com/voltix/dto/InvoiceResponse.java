@@ -23,9 +23,14 @@ public class InvoiceResponse {
     private BigDecimal idleFee;
     private BigDecimal discountAmount;
     private BigDecimal finalCost;
+    private BigDecimal amountPaid;
+    private BigDecimal outstandingAmount;
     private String paymentStatus;
     private String paymentMethod;
     private LocalDateTime paymentTime;
+    private String transactionReference;
+    private Integer reservationId;
+    private String stationAddress;
 
     public InvoiceResponse() {}
 
@@ -91,4 +96,19 @@ public class InvoiceResponse {
 
     public LocalDateTime getPaymentTime() { return paymentTime; }
     public void setPaymentTime(LocalDateTime paymentTime) { this.paymentTime = paymentTime; }
+
+    public BigDecimal getAmountPaid() { return amountPaid; }
+    public void setAmountPaid(BigDecimal amountPaid) { this.amountPaid = amountPaid; }
+
+    public BigDecimal getOutstandingAmount() { return outstandingAmount; }
+    public void setOutstandingAmount(BigDecimal outstandingAmount) { this.outstandingAmount = outstandingAmount; }
+
+    public String getTransactionReference() { return transactionReference; }
+    public void setTransactionReference(String transactionReference) { this.transactionReference = transactionReference; }
+
+    public Integer getReservationId() { return reservationId; }
+    public void setReservationId(Integer reservationId) { this.reservationId = reservationId; }
+
+    public String getStationAddress() { return stationAddress; }
+    public void setStationAddress(String stationAddress) { this.stationAddress = stationAddress; }
 }

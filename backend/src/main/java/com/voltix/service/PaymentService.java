@@ -48,8 +48,8 @@ public class PaymentService {
         ChargingSession session = sessionRepository.findById(request.getSessionId())
                 .orElseThrow(() -> new ResourceNotFoundException("ChargingSession", "id", request.getSessionId()));
 
-        User owner = session.getVehicle().getUser();
-        if (!owner.getUserId().equals(userId)) {
+        User owner = session.getVehicle() != null ? session.getVehicle().getUser() : (session.getReservation() != null ? session.getReservation().getUser() : null);
+        if (owner != null && !owner.getUserId().equals(userId)) {
             throw new ForbiddenException("You cannot settle payment for another user's charging session");
         }
 
@@ -97,51 +97,119 @@ public class PaymentService {
         ChargingSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ChargingSession", "id", sessionId));
 
-        if (!session.getVehicle().getUser().getUserId().equals(userId)) {
+        Integer ownerId = null;
+        if (session.getVehicle() != null && session.getVehicle().getUser() != null) {
+            ownerId = session.getVehicle().getUser().getUserId();
+        } else if (session.getReservation() != null && session.getReservation().getUser() != null) {
+            ownerId = session.getReservation().getUser().getUserId();
+        }
+
+        if (ownerId != null && !ownerId.equals(userId)) {
             throw new ForbiddenException("You do not have permission to view this invoice");
         }
 
         InvoiceResponse invoice = new InvoiceResponse();
         invoice.setSessionId(session.getSessionId());
         invoice.setInvoiceNumber("INV-2026-" + String.format("%06d", session.getSessionId()));
-        invoice.setUserName(session.getVehicle().getUser().getName());
-        invoice.setVehicleName(session.getVehicle().getModel().getManufacturer() + " " + session.getVehicle().getModel().getModelName());
-        invoice.setRegistrationNumber(session.getVehicle().getRegistrationNumber());
-        invoice.setStationName(session.getCharger().getStation().getStationName());
-        invoice.setChargerNumber(session.getCharger().getChargerNumber());
-        invoice.setConnectorType(session.getCharger().getChargerType().getConnectorType());
-        invoice.setStartTime(session.getStartTime());
-        invoice.setEndTime(session.getEndTime());
-        invoice.setDurationMinutes(session.getDurationMinutes());
-        invoice.setEnergyConsumedKwh(session.getEnergyConsumed());
 
-        BigDecimal rate = session.getCharger().getChargerType().getPowerRating().compareTo(new BigDecimal("50")) > 0
-                ? new BigDecimal("17.50") : new BigDecimal("14.00");
+        String userName = "Voltix Driver";
+        String vehicleName = "Registered EV";
+        String regNumber = "—";
+        if (session.getVehicle() != null) {
+            if (session.getVehicle().getUser() != null && session.getVehicle().getUser().getName() != null) {
+                userName = session.getVehicle().getUser().getName();
+            }
+            if (session.getVehicle().getModel() != null) {
+                vehicleName = session.getVehicle().getModel().getManufacturer() + " " + session.getVehicle().getModel().getModelName();
+            }
+            if (session.getVehicle().getRegistrationNumber() != null) {
+                regNumber = session.getVehicle().getRegistrationNumber();
+            }
+        } else if (session.getReservation() != null && session.getReservation().getUser() != null && session.getReservation().getUser().getName() != null) {
+            userName = session.getReservation().getUser().getName();
+        }
+        invoice.setUserName(userName);
+        invoice.setVehicleName(vehicleName);
+        invoice.setRegistrationNumber(regNumber);
+
+        String stationName = "Voltix Superhub";
+        String stationAddress = "Voltix Charging Bay";
+        String chargerNumber = "BAY-01";
+        String connectorType = "CCS2";
+        BigDecimal rate = new BigDecimal("14.00");
+
+        if (session.getCharger() != null) {
+            chargerNumber = session.getCharger().getChargerNumber() != null ? session.getCharger().getChargerNumber() : chargerNumber;
+            if (session.getCharger().getStation() != null) {
+                stationName = session.getCharger().getStation().getStationName() != null ? session.getCharger().getStation().getStationName() : stationName;
+                stationAddress = session.getCharger().getStation().getAddress() != null ? session.getCharger().getStation().getAddress() : stationAddress;
+            }
+            if (session.getCharger().getChargerType() != null) {
+                connectorType = session.getCharger().getChargerType().getConnectorType() != null ? session.getCharger().getChargerType().getConnectorType() : connectorType;
+                if (session.getCharger().getChargerType().getPowerRating() != null && session.getCharger().getChargerType().getPowerRating().compareTo(new BigDecimal("50")) > 0) {
+                    rate = new BigDecimal("17.50");
+                }
+            }
+        }
+
+        invoice.setStationName(stationName);
+        invoice.setStationAddress(stationAddress);
+        invoice.setChargerNumber(chargerNumber);
+        invoice.setConnectorType(connectorType);
         invoice.setRatePerKwh(rate);
 
-        BigDecimal energyCost = session.getEnergyConsumed().multiply(rate).setScale(2, RoundingMode.HALF_UP);
+        invoice.setStartTime(session.getStartTime());
+        invoice.setEndTime(session.getEndTime());
+        int duration = session.getDurationMinutes() != null ? session.getDurationMinutes() : 0;
+        invoice.setDurationMinutes(duration);
+
+        BigDecimal energy = session.getEnergyConsumed() != null ? session.getEnergyConsumed() : BigDecimal.ZERO;
+        invoice.setEnergyConsumedKwh(energy);
+
+        BigDecimal energyCost = energy.multiply(rate).setScale(2, RoundingMode.HALF_UP);
         invoice.setEnergyCost(energyCost);
 
         BigDecimal reservationFee = session.getReservation() != null ? new BigDecimal("50.00") : BigDecimal.ZERO;
         invoice.setReservationFee(reservationFee);
 
-        BigDecimal idleFee = session.getDurationMinutes() > 90
-                ? BigDecimal.valueOf(session.getDurationMinutes() - 90).multiply(new BigDecimal("2.50"))
+        BigDecimal idleFee = duration > 90
+                ? BigDecimal.valueOf(duration - 90).multiply(new BigDecimal("2.50"))
                 : BigDecimal.ZERO;
         invoice.setIdleFee(idleFee);
 
         invoice.setDiscountAmount(BigDecimal.ZERO);
-        invoice.setFinalCost(session.getFinalCost().compareTo(BigDecimal.ZERO) > 0 ? session.getFinalCost() : energyCost.add(reservationFee));
+        BigDecimal sessionFinalCost = session.getFinalCost() != null ? session.getFinalCost() : BigDecimal.ZERO;
+        BigDecimal billTotal = sessionFinalCost.compareTo(BigDecimal.ZERO) > 0
+                ? sessionFinalCost
+                : energyCost.add(reservationFee).add(idleFee);
+        invoice.setFinalCost(billTotal);
+
+        invoice.setReservationId(session.getReservation() != null ? session.getReservation().getReservationId() : null);
 
         Optional<Payment> payment = paymentRepository.findBySession_SessionId(sessionId);
         if (payment.isPresent()) {
-            invoice.setPaymentStatus(payment.get().getPaymentStatus());
-            invoice.setPaymentMethod(payment.get().getPaymentMethod());
-            invoice.setPaymentTime(payment.get().getPaymentTime());
+            Payment p = payment.get();
+            invoice.setPaymentStatus(p.getPaymentStatus());
+            invoice.setPaymentMethod(p.getPaymentMethod());
+            invoice.setPaymentTime(p.getPaymentTime());
+            invoice.setTransactionReference("VX-TXN-" + String.format("%06d", p.getPaymentId()));
+
+            if ("SUCCESS".equalsIgnoreCase(p.getPaymentStatus())) {
+                BigDecimal paid = p.getAmount() != null ? p.getAmount() : billTotal;
+                invoice.setAmountPaid(paid);
+                BigDecimal balanceRemaining = billTotal.subtract(paid);
+                invoice.setOutstandingAmount(balanceRemaining.compareTo(BigDecimal.ZERO) > 0 ? balanceRemaining : BigDecimal.ZERO);
+            } else {
+                invoice.setAmountPaid(BigDecimal.ZERO);
+                invoice.setOutstandingAmount(billTotal);
+            }
         } else {
             invoice.setPaymentStatus("UNPAID");
             invoice.setPaymentMethod(null);
             invoice.setPaymentTime(null);
+            invoice.setTransactionReference(null);
+            invoice.setAmountPaid(BigDecimal.ZERO);
+            invoice.setOutstandingAmount(billTotal);
         }
 
         return invoice;

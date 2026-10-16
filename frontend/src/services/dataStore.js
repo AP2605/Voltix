@@ -180,6 +180,208 @@ const INITIAL_STATIONS = [
       { chargerId: 36, chargerNumber: 'HJ-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 11.5 },
     ],
   },
+  {
+    stationId: 13,
+    cityId: 7,
+    cityName: 'Mumbai',
+    state: 'Maharashtra',
+    stationName: 'BKC Financial Superhub',
+    address: 'G-Block, Bandra Kurla Complex, Bandra East, Mumbai',
+    latitude: 19.0657140,
+    longitude: 72.8683210,
+    distanceKm: 1.8,
+    status: 'ACTIVE',
+    basePricePerKwh: 16.5,
+    operatingHours: '24/7 Open',
+    amenities: ['Business Lounge', 'Cafeteria', 'Valet Parking', 'High-Speed Wi-Fi'],
+    chargers: [
+      { chargerId: 37, chargerNumber: 'BKC-CH01', connectorType: 'CCS2', powerKw: 120, pricePerKwh: 19.5, status: 'AVAILABLE' },
+      { chargerId: 38, chargerNumber: 'BKC-CH02', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 16.5, status: 'AVAILABLE' },
+      { chargerId: 39, chargerNumber: 'BKC-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 13.0, status: 'OCCUPIED' },
+      { chargerId: 40, chargerNumber: 'BKC-CH04', connectorType: 'GB/T', powerKw: 15, pricePerKwh: 11.5, status: 'AVAILABLE' },
+    ],
+  },
+  {
+    stationId: 14,
+    cityId: 7,
+    cityName: 'Mumbai',
+    state: 'Maharashtra',
+    stationName: 'Andheri West Metro ChargePark',
+    address: 'Link Road, Near Infinity Mall, Andheri West, Mumbai',
+    latitude: 19.1363210,
+    longitude: 72.8276540,
+    distanceKm: 4.2,
+    status: 'ACTIVE',
+    basePricePerKwh: 15.5,
+    operatingHours: '06:00 AM - 11:30 PM',
+    amenities: ['Shopping Mall', 'Restrooms', 'Food Court'],
+    chargers: [
+      { chargerId: 41, chargerNumber: 'AND-CH01', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 15.5, status: 'AVAILABLE' },
+      { chargerId: 42, chargerNumber: 'AND-CH02', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 12.5, status: 'AVAILABLE' },
+      { chargerId: 43, chargerNumber: 'AND-CH03', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 15.5, status: 'MAINTENANCE' },
+    ],
+  },
+  {
+    stationId: 15,
+    cityId: 7,
+    cityName: 'Mumbai',
+    state: 'Maharashtra',
+    stationName: 'Navi Mumbai Highway VoltPoint',
+    address: 'Sion-Panvel Expressway, Vashi Sector 17, Navi Mumbai',
+    latitude: 19.0330490,
+    longitude: 73.0296620,
+    distanceKm: 6.9,
+    status: 'ACTIVE',
+    basePricePerKwh: 15.0,
+    operatingHours: '24/7 Open',
+    amenities: ['Highway Diner', 'Restrooms', 'Convenience Store'],
+    chargers: [
+      { chargerId: 44, chargerNumber: 'NM-CH01', connectorType: 'CCS2', powerKw: 120, pricePerKwh: 18.5, status: 'AVAILABLE' },
+      { chargerId: 45, chargerNumber: 'NM-CH02', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 15.0, status: 'OCCUPIED' },
+      { chargerId: 46, chargerNumber: 'NM-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 12.0, status: 'AVAILABLE' },
+    ],
+  },
+  {
+    stationId: 16,
+    cityId: 8,
+    cityName: 'Delhi NCR',
+    state: 'Delhi',
+    stationName: 'Connaught Place EV Hub',
+    address: 'Outer Circle, Connaught Place, New Delhi',
+    latitude: 28.6315200,
+    longitude: 77.2167210,
+    distanceKm: 2.1,
+    status: 'ACTIVE',
+    basePricePerKwh: 16.0,
+    operatingHours: '24/7 Open',
+    amenities: ['Metro Walkway', 'Restaurants', 'Underground Parking'],
+    chargers: [
+      { chargerId: 47, chargerNumber: 'CP-CH01', connectorType: 'CCS2', powerKw: 120, pricePerKwh: 19.0, status: 'AVAILABLE' },
+      { chargerId: 48, chargerNumber: 'CP-CH02', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 16.0, status: 'AVAILABLE' },
+      { chargerId: 49, chargerNumber: 'CP-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 12.5, status: 'OCCUPIED' },
+      { chargerId: 50, chargerNumber: 'CP-CH04', connectorType: 'GB/T', powerKw: 15, pricePerKwh: 11.0, status: 'AVAILABLE' },
+    ],
+  },
+  {
+    stationId: 17,
+    cityId: 8,
+    cityName: 'Delhi NCR',
+    state: 'Delhi',
+    stationName: 'Aerocity Hospitality VoltStation',
+    address: 'Asset 5B, Hospitality District, IGI Airport, New Delhi',
+    latitude: 28.5524100,
+    longitude: 77.1219400,
+    distanceKm: 3.5,
+    status: 'ACTIVE',
+    basePricePerKwh: 17.0,
+    operatingHours: '24/7 Open',
+    amenities: ['Hotel District', 'Executive Lounge', 'Free Wi-Fi'],
+    chargers: [
+      { chargerId: 51, chargerNumber: 'AERO-CH01', connectorType: 'CCS2', powerKw: 120, pricePerKwh: 20.0, status: 'AVAILABLE' },
+      { chargerId: 52, chargerNumber: 'AERO-CH02', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 17.0, status: 'AVAILABLE' },
+      { chargerId: 53, chargerNumber: 'AERO-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 13.5, status: 'AVAILABLE' },
+    ],
+  },
+  {
+    stationId: 18,
+    cityId: 8,
+    cityName: 'Delhi NCR',
+    state: 'Delhi',
+    stationName: 'Cyber City Expressway FastCharge',
+    address: 'DLF Cyber City, Building 10 Tower B, Gurugram NCR',
+    latitude: 28.4950200,
+    longitude: 77.0895400,
+    distanceKm: 5.4,
+    status: 'ACTIVE',
+    basePricePerKwh: 16.5,
+    operatingHours: '24/7 Open',
+    amenities: ['Cyber Hub Food Court', 'Security Guard', 'Covered Bay'],
+    chargers: [
+      { chargerId: 54, chargerNumber: 'CYBER-CH01', connectorType: 'CCS2', powerKw: 120, pricePerKwh: 19.5, status: 'OCCUPIED' },
+      { chargerId: 55, chargerNumber: 'CYBER-CH02', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 16.5, status: 'AVAILABLE' },
+      { chargerId: 56, chargerNumber: 'CYBER-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 13.0, status: 'AVAILABLE' },
+    ],
+  },
+  {
+    stationId: 19,
+    cityId: 2,
+    cityName: 'Bengaluru',
+    state: 'Karnataka',
+    stationName: 'Koramangala 80-Feet Voltix Plaza',
+    address: '80 Feet Main Road, 4th Block, Koramangala, Bengaluru',
+    latitude: 12.9352100,
+    longitude: 77.6245300,
+    distanceKm: 2.8,
+    status: 'ACTIVE',
+    basePricePerKwh: 15.0,
+    operatingHours: '24/7 Open',
+    amenities: ['Artisan Bakery', 'EV Accessories Store'],
+    chargers: [
+      { chargerId: 57, chargerNumber: 'KOR-CH01', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 15.0, status: 'AVAILABLE' },
+      { chargerId: 58, chargerNumber: 'KOR-CH02', connectorType: 'CCS2', powerKw: 120, pricePerKwh: 18.5, status: 'AVAILABLE' },
+      { chargerId: 59, chargerNumber: 'KOR-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 12.0, status: 'OCCUPIED' },
+    ],
+  },
+  {
+    stationId: 20,
+    cityId: 1,
+    cityName: 'Chennai',
+    state: 'Tamil Nadu',
+    stationName: 'T. Nagar Commercial EV Bay',
+    address: 'South Usman Road, Near Panagal Park, T. Nagar, Chennai',
+    latitude: 13.0418200,
+    longitude: 80.2341400,
+    distanceKm: 3.9,
+    status: 'ACTIVE',
+    basePricePerKwh: 14.5,
+    operatingHours: '08:00 AM - 11:00 PM',
+    amenities: ['Shopping Center', 'Restrooms'],
+    chargers: [
+      { chargerId: 60, chargerNumber: 'TN-CH01', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 14.5, status: 'AVAILABLE' },
+      { chargerId: 61, chargerNumber: 'TN-CH02', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 12.0, status: 'AVAILABLE' },
+      { chargerId: 62, chargerNumber: 'TN-CH03', connectorType: 'GB/T', powerKw: 15, pricePerKwh: 10.5, status: 'AVAILABLE' },
+    ],
+  },
+  {
+    stationId: 21,
+    cityId: 4,
+    cityName: 'Hyderabad',
+    state: 'Telangana',
+    stationName: 'Banjara Hills GreenCharger',
+    address: 'Road No. 12, Banjara Hills, Hyderabad',
+    latitude: 17.4156100,
+    longitude: 78.4350200,
+    distanceKm: 4.1,
+    status: 'ACTIVE',
+    basePricePerKwh: 15.0,
+    operatingHours: '24/7 Open',
+    amenities: ['Fine Dining', 'Waiting Area', 'Wi-Fi'],
+    chargers: [
+      { chargerId: 63, chargerNumber: 'BH-CH01', connectorType: 'CCS2', powerKw: 120, pricePerKwh: 18.5, status: 'AVAILABLE' },
+      { chargerId: 64, chargerNumber: 'BH-CH02', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 15.0, status: 'AVAILABLE' },
+      { chargerId: 65, chargerNumber: 'BH-CH03', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 12.0, status: 'AVAILABLE' },
+    ],
+  },
+  {
+    stationId: 22,
+    cityId: 6,
+    cityName: 'Pune',
+    state: 'Maharashtra',
+    stationName: 'Kothrud VoltCharge Terminal',
+    address: 'Paud Road, Near Vanaz Corner, Kothrud, Pune',
+    latitude: 18.5074200,
+    longitude: 73.8077400,
+    distanceKm: 3.3,
+    status: 'ACTIVE',
+    basePricePerKwh: 14.5,
+    operatingHours: '24/7 Open',
+    amenities: ['Tea Point', 'Restrooms', 'Tire Pressure Inflator'],
+    chargers: [
+      { chargerId: 66, chargerNumber: 'KOT-CH01', connectorType: 'CCS2', powerKw: 50, pricePerKwh: 14.5, status: 'AVAILABLE' },
+      { chargerId: 67, chargerNumber: 'KOT-CH02', connectorType: 'TYPE2', powerKw: 22, pricePerKwh: 11.5, status: 'AVAILABLE' },
+      { chargerId: 68, chargerNumber: 'KOT-CH03', connectorType: 'GB/T', powerKw: 15, pricePerKwh: 10.5, status: 'OCCUPIED' },
+    ],
+  },
 ];
 
 export const VEHICLE_MODELS = [
@@ -202,6 +404,8 @@ export const CITIES = [
   { cityId: 4, cityName: 'Hyderabad', state: 'Telangana' },
   { cityId: 5, cityName: 'Coimbatore', state: 'Tamil Nadu' },
   { cityId: 6, cityName: 'Pune', state: 'Maharashtra' },
+  { cityId: 7, cityName: 'Mumbai', state: 'Maharashtra' },
+  { cityId: 8, cityName: 'Delhi NCR', state: 'Delhi' },
 ];
 
 // Helper to safely read JSON from localStorage
@@ -259,7 +463,7 @@ const INITIAL_USERS = [
 // Initialize persistent station catalog if not present
 function initCatalog() {
   const existingStations = readStorage(STORAGE_KEYS.STATIONS, null);
-  if (!existingStations || !Array.isArray(existingStations) || existingStations.length === 0) {
+  if (!existingStations || !Array.isArray(existingStations) || existingStations.length < INITIAL_STATIONS.length) {
     writeStorage(STORAGE_KEYS.STATIONS, INITIAL_STATIONS);
   }
 
@@ -470,6 +674,14 @@ export const dataStore = {
       allVehicles[userId] = userVehicles;
       writeStorage(STORAGE_KEYS.VEHICLES, allVehicles);
     }
+  },
+
+  deleteVehicle(vehicleId) {
+    const allVehicles = readStorage(STORAGE_KEYS.VEHICLES, {});
+    for (const uId of Object.keys(allVehicles)) {
+      allVehicles[uId] = (allVehicles[uId] || []).filter((v) => v.vehicleId !== Number(vehicleId));
+    }
+    writeStorage(STORAGE_KEYS.VEHICLES, allVehicles);
   },
 
   // --------------------------------------------------------------------------

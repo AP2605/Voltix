@@ -49,6 +49,19 @@ export const chargingService = {
     }
   },
 
+  async getSessionById(sessionId) {
+    try {
+      return await apiRequest(`/charging-sessions/${sessionId}`);
+    } catch (err) {
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const sessions = dataStore.getSessions ? dataStore.getSessions() : [];
+        const found = sessions.find((s) => s.sessionId === Number(sessionId));
+        return mockFetch(found);
+      }
+      throw err;
+    }
+  },
+
   async getChargingHistory(userId) {
     try {
       return await apiRequest('/charging-sessions');
